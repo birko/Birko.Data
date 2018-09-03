@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>6a3be12e-e37d-4697-8f29-d307c10774ba</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Birko.Data</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Attribute\Field.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Attribute\Table.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Attribute\View.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Condition\Condition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Create.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Delete.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Drop.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Insert.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Select.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Update.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\DataBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Field\AbstractField.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Field\BooleanField.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Field\DateTimeField.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Field\IntegerField.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Field\DecimalField.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Field\GuidField.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Field\StringField.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Table\Table.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Exceptions\FieldAttributeException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Exceptions\StoreException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Exceptions\TableAttributeException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Model\AbstractLogModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Model\AbstractModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Model\ICopyable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Model\ILoadable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Repository\AbstractRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Repository\DataBaseRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Repository\JsonRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Repository\IConfigurator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Repository\IInitializer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Repository\IRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Store\IStore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Store\JsonStore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Store\Settings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Store\DataBaseStore.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)DataBase\Table\" />
+  </ItemGroup>
+</Project>
