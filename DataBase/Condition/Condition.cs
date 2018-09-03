@@ -35,8 +35,8 @@ namespace Birko.Data.DataBase.Condition
             Type = type;
             Values = values;
             IsField = isField;
-            IsOr = IsOr;
-            IsNot = IsNot;
+            IsOr = isOr;
+            IsNot = isNot;
             SubConditions = subConditions;
         }
 

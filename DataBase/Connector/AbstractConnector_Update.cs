@@ -44,6 +44,45 @@ namespace Birko.Data.DataBase.Connector
             }
         }
 
+        public void Update<T, P>(Type type, IDictionary<Expression<Func<T, P>>, object> expresions, LambdaExpression expr)
+        {
+            Update(type, expresions, DataBase.ParseExpression(expr));
+        }
+
+        public void Update<T,P>(Type type, IDictionary<Expression<Func<T, P>>, object> expresions, IEnumerable<Condition.Condition> conditions = null)
+        {
+            var table = DataBase.LoadTable(type);
+            Update(table, expresions, conditions);
+        }
+
+        public void Update<T, P>(Table.Table table, IDictionary<Expression<Func<T, P>>, object> expresions, Expression expr)
+        {
+                Update(table, expresions, DataBase.ParseExpression(expr));
+        }
+
+        public void Update<T, P>(Table.Table table, IDictionary<Expression<Func<T, P>>, object> expresions, IEnumerable<Condition.Condition> conditions = null)
+        {
+            if (table != null)
+            {
+                Update(table.Name, expresions, conditions);
+            }
+        }
+
+        public void Update<T, P>(string tableName, IDictionary<Expression<Func<T, P>>, object> expresions, IEnumerable<Condition.Condition> conditions = null)
+        {
+            var fields = new Dictionary<int, string>();
+            var values = new Dictionary<string, object>();
+            int i = 0;
+            foreach (var kvp in expresions)
+            {
+                var field = DataBase.GetField(kvp.Key);
+                fields.Add(i, field.Name);
+                values.Add(field.Name, kvp.Value);
+                i++;
+            }
+            Update(tableName, fields, values, conditions);
+        }
+
         public void Update(Table.Table table, IDictionary<string, object> values, IEnumerable<Condition.Condition> conditions = null)
         {
             var tableName = table.Name;

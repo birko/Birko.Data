@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 namespace Birko.Data.DataBase
@@ -101,6 +102,14 @@ namespace Birko.Data.DataBase
             return _tableCache[type];
         }
 
+        public static AbstractField GetField<T, P>(Expression<Func<T, P>> expr)
+        {
+            var expression = (MemberExpression)expr.Body;
+            PropertyInfo propInfo = expression.Member as PropertyInfo;
+            var fields = LoadField(propInfo);
+            return fields.First();
+        }
+
         public static IEnumerable<AbstractField> GetPrimaryFields(Type type)
         {
             var table = LoadTable(type);
@@ -120,31 +129,38 @@ namespace Birko.Data.DataBase
             }
             if (!_fieldsCache.ContainsKey(type))
             {
-                List<Field.AbstractField> list = new List<Field.AbstractField>();
+                List<AbstractField> list = new List<AbstractField>();
                 foreach (var field in type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
                 {
-                    object[] fieldAttrs = field.GetCustomAttributes(typeof(Attribute.Field), true);
-                    if (fieldAttrs != null)
-                    {
-                        foreach (Attribute.Field fieldAttr in fieldAttrs)
-                        {
-                            string name = !string.IsNullOrEmpty(fieldAttr.Name) ? fieldAttr.Name : field.Name;
-                            var tableField = Field.AbstractField.FromAttribute(field, fieldAttr);
-
-                            if (tableField != null)
-                            {
-                                list.Add(tableField);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        throw new Exceptions.FieldAttributeException("No field attributes in type");
-                    }
+                    list.AddRange(LoadField(field));
                 }
                 _fieldsCache.Add(type, list.ToArray());
             }
             return _fieldsCache[type];
+        }
+
+        public static IEnumerable<AbstractField> LoadField(PropertyInfo field)
+        {
+            List<AbstractField> list = new List<AbstractField>();
+            object[] fieldAttrs = field.GetCustomAttributes(typeof(Attribute.Field), true);
+            if (fieldAttrs != null)
+            {
+                foreach (Attribute.Field fieldAttr in fieldAttrs)
+                {
+                    string name = !string.IsNullOrEmpty(fieldAttr.Name) ? fieldAttr.Name : field.Name;
+                    var tableField = Field.AbstractField.FromAttribute(field, fieldAttr);
+
+                    if (tableField != null)
+                    {
+                        list.Add(tableField);
+                    }
+                }
+            }
+            else
+            {
+                throw new Exceptions.FieldAttributeException("No field attributes in type");
+            }
+            return list.ToArray();
         }
 
         public static Dictionary<string, object> Write(object data)
@@ -293,13 +309,13 @@ namespace Birko.Data.DataBase
                             ParseExpression(arg, parent);
                         }
                     }
-                    if (expr.NodeType == ExpressionType.Constant)
+                    if (expr.NodeType == ExpressionType.Constant || expr.NodeType == ExpressionType.Convert)
                     {
                         List<object> vals = new List<object>();
                         var f = Expression.Lambda(expr).Compile();
                         var value = f.DynamicInvoke();
                         var valueType = value.GetType();
-                        if (valueType.IsPrimitive || valueType == typeof(string))
+                        if (valueType.IsPrimitive || valueType == typeof(string) || valueType == typeof(Guid))
                         {
                             vals.Add(value);
                         }

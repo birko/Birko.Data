@@ -56,5 +56,14 @@ namespace Birko.Data.Repository
             }
             return list.ToArray();
         }
+
+        public virtual void Update(IDictionary<Expression<Func<TModel, bool>>, object> expresions, Expression<Func<TModel, bool>> expr)
+        {
+            if (_store != null)
+            {
+                var connector = (_store as Store.DataBaseStore<TConnector, TModel>).Connector;
+                connector.Update(typeof(TModel), expresions, expr);
+            }
+        }
     }
 }

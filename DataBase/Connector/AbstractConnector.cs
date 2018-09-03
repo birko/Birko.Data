@@ -65,38 +65,81 @@ namespace Birko.Data.DataBase.Connector
                 else if (!string.IsNullOrEmpty(condition.Name))
                 {
                     result.Append(condition.Name);
-                    if (condition.IsNot)
-                    {
-                        result.Append(" NOT ");
-                    }
                     switch (condition.Type)
                     {
                         case Condition.ConditionType.IsNull:
+                            if (condition.IsNot)
+                            {
+                                result.Append(" NOT ");
+                            }
                             result.Append(" IS NULL");
                             break;
                         case Condition.ConditionType.Less:
-                            result.Append(" < "); break;
+                            if (condition.IsNot)
+                            {
+                                result.Append(" >= ");
+                            }
+                            else
+                            {
+                                result.Append(" < ");
+                            }
+                            break;
                         case Condition.ConditionType.Greather:
-
-                            result.Append(" > ");
+                            if (condition.IsNot)
+                            {
+                                result.Append(" <= ");
+                            }
+                            else
+                            {
+                                result.Append(" > ");
+                            }
                             break;
                         case Condition.ConditionType.LessAndEqual:
-                            result.Append(" <= ");
+                            if (condition.IsNot)
+                            {
+                                result.Append(" > ");
+                            }
+                            else
+                            {
+                                result.Append(" <= ");
+                            }
                             break;
                         case Condition.ConditionType.GreatherAndEqual:
-                            result.Append(" >= ");
+                            if (condition.IsNot)
+                            {
+                                result.Append(" < ");
+                            }
+                            else
+                            {
+                                result.Append(" >= ");
+                            }
                             break;
                         case Condition.ConditionType.Like:
                         case Condition.ConditionType.EndsWith:
                         case Condition.ConditionType.StartsWith:
+                            if (condition.IsNot)
+                            {
+                                result.Append(" NOT ");
+                            }
                             result.Append(" LIKE ");
                             break;
                         case Condition.ConditionType.In:
+                            if (condition.IsNot)
+                            {
+                                result.Append(" NOT ");
+                            }
                             result.Append(" IN ");
                             break;
                         case Condition.ConditionType.Equal:
                         default:
-                            result.Append(" = ");
+                            if (condition.IsNot)
+                            {
+                                result.Append(" <> ");
+                            }
+                            else
+                            {
+                                result.Append(" = ");
+                            }
                             break;
                     }
                     if (condition.Type != Condition.ConditionType.IsNull)
