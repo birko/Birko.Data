@@ -20,4 +20,15 @@ namespace Birko.Data.Store
     {
         public string Password { get; set; }
     }
+
+    public class RemoteSettins : PasswordSettings
+    {
+        public string UserName { get; set; }
+        public int Port { get; set; }
+
+        public override string GetId()
+        {
+            return string.Format("{0}:{1}:{2}", base.GetId(), UserName, Port);
+        }
+    }
 }
