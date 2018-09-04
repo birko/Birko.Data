@@ -25,5 +25,17 @@ namespace Birko.Data.DataBase.Table
         {
             return Fields?.Values.Where(x => x.IsPrimary);
         }
+
+        internal Field.AbstractField GetField(string name)
+        {
+            return (Fields != null && Fields.Any() && Fields.ContainsKey(name)) ? Fields[name] : null;
+        }
+
+        internal Field.AbstractField GetFieldByPropertyName(string name)
+        {
+            return (Fields != null && Fields.Any() && Fields.Any(x=>x.Value.Property != null && x.Value.Property.Name == name))
+                ? Fields.FirstOrDefault(x => x.Value.Property != null && x.Value.Property.Name == name).Value
+                : null;
+        }
     }
 }

@@ -15,58 +15,99 @@ namespace Birko.Data.DataBase.Connector
             Select(type, resultAction, DataBase.ParseExpression(expr));
         }
 
+        public void Select(Type[] types, Action<IEnumerable<object>> resultAction, LambdaExpression expr)
+        {
+            Select(types, resultAction, DataBase.ParseExpression(expr));
+        }
+
         public void Select(Type type, Action<object> resultAction, IEnumerable<Condition.Condition> conditions = null)
         {
-            var table = DataBase.LoadTable(type);
-            Select(table, (fields, reader) => {
-                if (resultAction != null)
+            Select(new[] { type }, (objects) => {
+                if (resultAction != null && objects != null && objects.Any())
                 {
-                    var data = Activator.CreateInstance(type, new object[0]);
-                    var index = DataBase.Read(reader, data);
+                    var data = objects.First();
                     resultAction(data);
                 }
             }, conditions);
         }
 
+        public void Select(IEnumerable<Type> types, Action<IEnumerable<object>> resultAction, IEnumerable<Condition.Condition> conditions = null)
+        {
+            if (types != null)
+            {
+                Select(types.Select(x=> DataBase.LoadTable(x)), (fields, reader) => {
+                    if (resultAction != null)
+                    {
+                        var index = 0;
+                        List<object> objects = new List<object>();
+                        foreach (var type in types)
+                        {
+                            var data = Activator.CreateInstance(type, new object[0]);
+                            index = DataBase.Read(reader, data, index);
+                            objects.Add(data);
+                        }
+                        resultAction(objects.ToArray());
+                    }
+                }, conditions);
+            }
+        }
+
         public void Select(Table.Table table, Action<IDictionary<int, string>, DbDataReader> readAction, IEnumerable<Condition.Condition> conditions = null)
         {
-            if (table != null)
+            Select(new[] { table }, readAction, conditions);
+        }
+
+        public void Select(IEnumerable<Table.Table> tables, Action<IDictionary<int, string>, DbDataReader> readAction, IEnumerable<Condition.Condition> conditions = null)
+        {
+            if (tables != null)
             {
-                IDictionary<int, string> fields = table.GetSelectFields();
-                var tableName = table.Name;
-                Select(tableName, fields, readAction, conditions);
+                Dictionary<int, string> fields = new Dictionary<int, string>();
+                int i = 0;
+                foreach(var table in tables)
+                {
+                    var tablefields = table.GetSelectFields();
+                    foreach (var kvp in tablefields)
+                    {
+                        fields.Add(i, kvp.Value);
+                        i++;
+                    }
+                }
+                Select(tables.Select(x=>x.Name), fields, readAction, conditions);
             }
         }
 
         public void Select(string tableName, IDictionary<int, string> fields, Action<IDictionary<int, string>, DbDataReader> readAction = null, IEnumerable<Condition.Condition> conditions = null)
         {
-            using (var db = CreateConnection(_settings))
+            Select(new[] { tableName }, fields, readAction, conditions);
+        }
+
+        public void Select(IEnumerable<string> tableNames, IDictionary<int, string> fields, Action<IDictionary<int, string>, DbDataReader> readAction = null, IEnumerable<Condition.Condition> conditions = null)
+        {
+            if(tableNames != null && tableNames.Any() && tableNames.Any(x=>!string.IsNullOrEmpty(x)))
             {
-                db.Open();
-                try
+                using (var db = CreateConnection(_settings))
                 {
-                    using (var command = db.CreateCommand())
+                    db.Open();
+                    try
                     {
-                        command.CommandText = "SELECT "
-                            + string.Join(", ", fields.Values)
-                            + " FROM "
-                            + tableName;
-                        AddWhere(conditions, command);
-                        var reader = command.ExecuteReader();
-                        if (reader.HasRows)
+                        using (var command = CreateSelectCommand(db, tableNames.Where(x => !string.IsNullOrEmpty(x)).Distinct(), fields, conditions))
                         {
-                            bool isNext = reader.Read();
-                            while (isNext)
+                            var reader = command.ExecuteReader();
+                            if (reader.HasRows)
                             {
-                                readAction?.Invoke(fields, reader);
-                                isNext = reader.Read();
+                                bool isNext = reader.Read();
+                                while (isNext)
+                                {
+                                    readAction?.Invoke(fields, reader);
+                                    isNext = reader.Read();
+                                }
                             }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    InitException(ex);
+                    catch (Exception ex)
+                    {
+                        InitException(ex);
+                    }
                 }
             }
         }
@@ -74,47 +115,72 @@ namespace Birko.Data.DataBase.Connector
         #region count
         public long SelectCount(Type type, LambdaExpression expr)
         {
-            return SelectCount(type, DataBase.ParseExpression(expr));
+            return SelectCount(new[] { type }, expr);
+        }
+
+        public long SelectCount(IEnumerable<Type> types, LambdaExpression expr)
+        {
+            return SelectCount(types, DataBase.ParseExpression(expr));
         }
 
         public long SelectCount(Type type, IEnumerable<Condition.Condition> conditions = null)
         {
-            var table = DataBase.LoadTable(type);
-            return SelectCount(table, conditions);
+            return SelectCount(new[] { type }, conditions);
+        }
+
+        public long SelectCount(IEnumerable<Type> types, IEnumerable<Condition.Condition> conditions = null)
+        {
+            return (types != null) ? SelectCount(types.Select(x=>DataBase.LoadTable(x)), conditions) : 0;
         }
 
         public long SelectCount(Table.Table table, LambdaExpression expr)
         {
-            return (table != null) ? SelectCount(table.Name, DataBase.ParseExpression(expr)) : 0;
+            return SelectCount(new[] { table }, expr);
+        }
+
+        public long SelectCount(IEnumerable<Table.Table> tables, LambdaExpression expr)
+        {
+            return SelectCount(tables, DataBase.ParseExpression(expr));
         }
 
         public long SelectCount(Table.Table table, IEnumerable<Condition.Condition> conditions = null)
         {
-            return (table != null) ? SelectCount(table.Name, conditions) : 0;
+            return SelectCount(new[] { table.Name }, conditions);
+        }
+
+        public long SelectCount(IEnumerable<Table.Table> tables, IEnumerable<Condition.Condition> conditions = null)
+        {
+            return (tables != null) ? SelectCount(tables.Select(x=>x.Name), conditions) : 0;
         }
 
         public long SelectCount(string tableName, IEnumerable<Condition.Condition> conditions = null)
         {
+            return SelectCount(new[] { tableName }, conditions);
+        }
+        public long SelectCount(IEnumerable<string> tableNames, IEnumerable<Condition.Condition> conditions = null)
+        {
             long count = 0;
-            using (var db = CreateConnection(_settings))
+            if (tableNames != null && tableNames.Any() && tableNames.Any(x => !string.IsNullOrEmpty(x)))
             {
-                db.Open();
-                try
+                using (var db = CreateConnection(_settings))
                 {
-                    using (var command = db.CreateCommand())
+                    db.Open();
+                    try
                     {
-                        command.CommandText = "SELECT "
-                            + "count(*) as count"
-                            + " FROM "
-                            + tableName;
-                        AddWhere(conditions, command);
-                        var data = command.ExecuteScalar();
-                        count = (long)command.ExecuteScalar();
+                        var fields = new Dictionary<int, string>()
+                        {
+                            { 0, "count(*) as count"}
+                        };
+                        using (var command = CreateSelectCommand(db, tableNames.Where(x => !string.IsNullOrEmpty(x)).Distinct(), fields, conditions))
+                        {
+                            var data = command.ExecuteScalar();
+                            count = (long)command.ExecuteScalar();
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    InitException(ex);
+                    catch (Exception ex)
+                    {
+                        InitException(ex);
+                    }
                 }
             }
             return count;
