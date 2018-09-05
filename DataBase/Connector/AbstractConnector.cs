@@ -260,17 +260,5 @@ namespace Birko.Data.DataBase.Connector
             }
             return command;
         }
-
-        public virtual DbCommand CreateSelectCommand(DbConnection db, IEnumerable<string> tableNames, IDictionary<int, string> fields, IEnumerable<Condition.Condition> conditions = null)
-        {
-            var command = db.CreateCommand();
-            command.CommandText = "SELECT "
-                                + string.Join(", ", fields.Values)
-                                + " FROM "
-                                + string.Join(",", tableNames.Where(x => !string.IsNullOrEmpty(x)).Distinct())
-                            ;
-            AddWhere(conditions, command);
-            return command;
-        }
     }
 }

@@ -16,6 +16,7 @@ namespace Birko.Data.DataBase
     {
         private static Dictionary<Type, Dictionary<string, AbstractConnector>> _connectors = null;
         private static Dictionary<Type, Table.Table> _tableCache = null;
+        private static Dictionary<Type, Table.View> _viewCache = null;
         private static Dictionary<Type, IEnumerable<Field.AbstractField>> _fieldsCache = null;
 
         public static AbstractConnector GetConnector<T>(Store.Settings settings) where T: AbstractConnector
@@ -35,7 +36,6 @@ namespace Birko.Data.DataBase
             return _connectors[typeof(T)][settings.GetId()];
         }
 
-        #region Attributes
         public static string GetGeneratedQuery(DbCommand dbCommand)
         {
             var query = dbCommand.CommandText;
@@ -46,6 +46,112 @@ namespace Birko.Data.DataBase
 
             return query;
         }
+
+        #region Attributes
+        public static AbstractField GetField<T, P>(Expression<Func<T, P>> expr)
+        {
+            var expression = (MemberExpression)expr.Body;
+            PropertyInfo propInfo = expression.Member as PropertyInfo;
+            var fields = LoadField(propInfo);
+            return fields.First();
+        }
+
+        public static IEnumerable<AbstractField> GetPrimaryFields(Type type)
+        {
+            var table = LoadTable(type);
+            return table?.GetPrimaryFields() ?? new AbstractField[0];
+        }
+
+        public static Condition.Condition CreateCondition(AbstractField field, object value)
+        {
+            return new Condition.Condition(field.Name, new[] { field.Property.GetValue(value, null) });
+        }
+
+        public static IEnumerable<Table.View> LoadViews(IEnumerable<Type> types)
+        {
+            if (types != null && types.Any())
+            {
+                List<Table.View> tables = new List<Table.View>();
+                foreach (Type type in types)
+                {
+                    var table = LoadView(type);
+                    if (table != null && table.Tables != null && table.Tables.Any() && table.Tables.Any(x=>x.Fields != null && x.Fields.Any()))
+                    {
+                        tables.Add(table);
+                    }
+                }
+                return tables.ToArray();
+            }
+            else
+            {
+                throw new Exceptions.TableAttributeException("Types enumerable is empty ot null");
+            }
+        }
+
+        public static Table.View LoadView(Type type)
+        {
+            if (_viewCache == null)
+            {
+                _viewCache = new Dictionary<Type, Table.View>();
+            }
+            if (!_viewCache.ContainsKey(type))
+            {
+                object[] attrs = type.GetCustomAttributes(typeof(Attribute.View), true).ToArray();
+                if (attrs != null)
+                {
+                    Table.View view = new Table.View();
+                    string name = string.Empty;
+                    foreach (Attribute.View attr in attrs)
+                    {
+                        if (!string.IsNullOrEmpty(attr.Name))
+                        {
+                            name += attr.Name;
+                        }
+                        var tableLeft = attr.ModelLeft != null ? LoadTable(attr.ModelLeft) : null;
+                        var tableRight = attr.ModelRight != null ? LoadTable(attr.ModelRight) : null;
+                        if (tableLeft != null && tableRight != null)
+                        {
+                            var fieldLeft = tableLeft.GetFieldByPropertyName(attr.ModelProperyLeft);
+                            var fieldRight = tableRight.GetFieldByPropertyName(attr.ModelProperyRight);
+                            if (fieldLeft != null && fieldRight != null)
+                            {
+                                view.AddJoin(Join.Create(tableLeft.Name, tableRight.Name, Condition.Condition.AndField(tableLeft.Name + "." + fieldLeft.Name, tableRight.Name + "." + fieldRight.Name)));
+                            }
+                        }
+                        foreach (var field in type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+                        {
+                            object[] fieldAttrs = field.GetCustomAttributes(typeof(Attribute.ViewField), true);
+                            if (fieldAttrs != null && fieldAttrs.Any())
+                            {
+                                foreach (Attribute.ViewField fieldAttr in fieldAttrs)
+                                {
+                                    var table = LoadTable(fieldAttr.ModelType);
+                                    if (table != null)
+                                    {
+                                        var tablefield = table.GetFieldByPropertyName(fieldAttr.ModelProperyName);
+                                        if (tablefield != null)
+                                        {
+                                            view.AddField(table.Name, tablefield);
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                throw new Exceptions.TableAttributeException("No field attributes in type");
+                            }
+                        }
+                        _viewCache.Add(type, view);
+                    }
+                }
+                else
+                {
+                    throw new Exceptions.TableAttributeException("No view attributes in type");
+                }
+            }
+            return _viewCache[type];
+        }
+
 
         public static IEnumerable<Table.Table> LoadTables(IEnumerable<Type> types)
         {
@@ -64,7 +170,7 @@ namespace Birko.Data.DataBase
             }
             else
             {
-                throw new Exceptions.TableAttributeException("Types enum is empty ot null");
+                throw new Exceptions.TableAttributeException("Types enumerable is empty ot null");
             }
         }
 
@@ -102,25 +208,6 @@ namespace Birko.Data.DataBase
             return _tableCache[type];
         }
 
-        public static AbstractField GetField<T, P>(Expression<Func<T, P>> expr)
-        {
-            var expression = (MemberExpression)expr.Body;
-            PropertyInfo propInfo = expression.Member as PropertyInfo;
-            var fields = LoadField(propInfo);
-            return fields.First();
-        }
-
-        public static IEnumerable<AbstractField> GetPrimaryFields(Type type)
-        {
-            var table = LoadTable(type);
-            return table?.GetPrimaryFields() ?? new AbstractField[0];
-        }
-
-        public static Condition.Condition CreateCondition(AbstractField field, object value)
-        {
-            return new Condition.Condition(field.Name, new[] { field.Property.GetValue(value, null) });
-        }
-
         private static IEnumerable<AbstractField> LoadFields(Type type)
         {
             if (_fieldsCache == null)
@@ -147,7 +234,6 @@ namespace Birko.Data.DataBase
             {
                 foreach (Attribute.Field fieldAttr in fieldAttrs)
                 {
-                    string name = !string.IsNullOrEmpty(fieldAttr.Name) ? fieldAttr.Name : field.Name;
                     var tableField = Field.AbstractField.FromAttribute(field, fieldAttr);
 
                     if (tableField != null)
@@ -194,6 +280,32 @@ namespace Birko.Data.DataBase
             return result;
         }
 
+        public static int ReadView(DbDataReader reader, object data, int index = 0)
+        {
+            var type = data.GetType();
+            List<Field.AbstractField> tableFields = new List<Field.AbstractField>();
+            foreach (var field in type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+            {
+                object[] fieldAttrs = field.GetCustomAttributes(typeof(Attribute.ViewField), true);
+                if (fieldAttrs != null)
+                {
+                    foreach (Attribute.ViewField fieldAttr in fieldAttrs)
+                    {
+                        string name = !string.IsNullOrEmpty(fieldAttr.ModelProperyName) ? fieldAttr.ModelProperyName : field.Name;
+                        if (_fieldsCache.ContainsKey(fieldAttr.ModelType) && _fieldsCache[type].Any(x => x.Property?.Name == name))
+                        {
+                            tableFields.Add(_fieldsCache[type].FirstOrDefault(x => x.Property?.Name == name));
+                        }
+                        else
+                        {
+                            tableFields.Add(new StringField(field, fieldAttr.Name));
+                        }
+                    }
+                }
+            }
+            return Read(tableFields, reader, data, index);
+        }
+
         public static int Read(DbDataReader reader, object data, int index = 0)
         {
             var type = data.GetType();
@@ -205,7 +317,16 @@ namespace Birko.Data.DataBase
                 {
                     foreach (Attribute.Field fieldAttr in fieldAttrs)
                     {
-                        tableFields.Add(Field.AbstractField.FromAttribute(field, fieldAttr));
+                        // from cache
+                        string name = !string.IsNullOrEmpty(fieldAttr.Name) ? fieldAttr.Name : field.Name;
+                        if (_fieldsCache.ContainsKey(type) && _fieldsCache[type].Any(x => x.Name == name))
+                        {
+                            tableFields.Add(_fieldsCache[type].FirstOrDefault(x => x.Name == name));
+                        }
+                        else
+                        {
+                            tableFields.Add(Field.AbstractField.FromAttribute(field, fieldAttr));
+                        }
                     }
                 }
             }

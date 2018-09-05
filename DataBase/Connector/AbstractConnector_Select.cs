@@ -9,7 +9,63 @@ namespace Birko.Data.DataBase.Connector
 {
     public abstract partial class AbstractConnector
     {
-        #region select
+        public virtual DbCommand CreateSelectCommand(DbConnection db, IEnumerable<string> tableNames, IDictionary<int, string> fields, IEnumerable<Condition.Condition> conditions = null)
+        {
+            return CreateSelectCommand(db, tableNames, fields, null, conditions);
+        }
+
+        public virtual DbCommand CreateSelectCommand(DbConnection db, Table.View view, IEnumerable<Condition.Condition> conditions = null)
+        {
+            return CreateSelectCommand(db, view.Tables.Select(x => x.Name), view.GetSelectFields(), view.Join, conditions);
+        }
+
+        public virtual DbCommand CreateSelectCommand(DbConnection db, IEnumerable<string> tableNames, IDictionary<int, string> fields, IEnumerable<Condition.Join> joinconditions = null, IEnumerable<Condition.Condition> conditions = null)
+        {
+            var command = db.CreateCommand();
+            command.CommandText = "SELECT " + string.Join(", ", fields.Values) + " FROM ";
+
+            var joins = (joinconditions != null && joinconditions.Any())
+                ? joinconditions.Where(x => !string.IsNullOrEmpty(x.Right)).Where(x => x != null).GroupBy(x => x.Left).ToDictionary(x => x.Key, x => x.AsEnumerable())
+                : new Dictionary<string, IEnumerable<Condition.Join>>();
+
+            int i = 0;
+            foreach (var table in tableNames)
+            {
+                if (i > 0)
+                {
+                    command.CommandText += ", ";
+                }
+                command.CommandText += table;
+                if (joins.ContainsKey(table))
+                {
+                    foreach (var join in joins[table])
+                    {
+                        switch (join.JoinType)
+                        {
+                            case Condition.JoinType.Inner:
+                                command.CommandText += " INNER JOIN ";
+                                break;
+                            case Condition.JoinType.LeftOuter:
+                                command.CommandText += " LEFT OUTER JOIN ";
+                                break;
+                            case Condition.JoinType.Cross:
+                            default:
+                                command.CommandText += " CROSS JOIN ";
+                                break;
+                        }
+                        if (join.JoinType != Condition.JoinType.Cross && join.Conditions != null && join.Conditions.Any())
+                        {
+                            command.CommandText += " ON (";
+                            command.CommandText += ConditionDefinition(conditions, command);
+                            command.CommandText += ")";
+                        }
+                    }
+                }
+            }
+            AddWhere(conditions, command);
+            return command;
+        }
+
         public void Select(Type type, Action<object> resultAction, LambdaExpression expr)
         {
             Select(type, resultAction, DataBase.ParseExpression(expr));
@@ -68,7 +124,7 @@ namespace Birko.Data.DataBase.Connector
                     var tablefields = table.GetSelectFields();
                     foreach (var kvp in tablefields)
                     {
-                        fields.Add(i, kvp.Value);
+                        fields.Add(i, table.Name + "." + kvp.Value);
                         i++;
                     }
                 }
@@ -111,80 +167,5 @@ namespace Birko.Data.DataBase.Connector
                 }
             }
         }
-        #endregion
-        #region count
-        public long SelectCount(Type type, LambdaExpression expr)
-        {
-            return SelectCount(new[] { type }, expr);
-        }
-
-        public long SelectCount(IEnumerable<Type> types, LambdaExpression expr)
-        {
-            return SelectCount(types, DataBase.ParseExpression(expr));
-        }
-
-        public long SelectCount(Type type, IEnumerable<Condition.Condition> conditions = null)
-        {
-            return SelectCount(new[] { type }, conditions);
-        }
-
-        public long SelectCount(IEnumerable<Type> types, IEnumerable<Condition.Condition> conditions = null)
-        {
-            return (types != null) ? SelectCount(types.Select(x=>DataBase.LoadTable(x)), conditions) : 0;
-        }
-
-        public long SelectCount(Table.Table table, LambdaExpression expr)
-        {
-            return SelectCount(new[] { table }, expr);
-        }
-
-        public long SelectCount(IEnumerable<Table.Table> tables, LambdaExpression expr)
-        {
-            return SelectCount(tables, DataBase.ParseExpression(expr));
-        }
-
-        public long SelectCount(Table.Table table, IEnumerable<Condition.Condition> conditions = null)
-        {
-            return SelectCount(new[] { table.Name }, conditions);
-        }
-
-        public long SelectCount(IEnumerable<Table.Table> tables, IEnumerable<Condition.Condition> conditions = null)
-        {
-            return (tables != null) ? SelectCount(tables.Select(x=>x.Name), conditions) : 0;
-        }
-
-        public long SelectCount(string tableName, IEnumerable<Condition.Condition> conditions = null)
-        {
-            return SelectCount(new[] { tableName }, conditions);
-        }
-        public long SelectCount(IEnumerable<string> tableNames, IEnumerable<Condition.Condition> conditions = null)
-        {
-            long count = 0;
-            if (tableNames != null && tableNames.Any() && tableNames.Any(x => !string.IsNullOrEmpty(x)))
-            {
-                using (var db = CreateConnection(_settings))
-                {
-                    db.Open();
-                    try
-                    {
-                        var fields = new Dictionary<int, string>()
-                        {
-                            { 0, "count(*) as count"}
-                        };
-                        using (var command = CreateSelectCommand(db, tableNames.Where(x => !string.IsNullOrEmpty(x)).Distinct(), fields, conditions))
-                        {
-                            var data = command.ExecuteScalar();
-                            count = (long)command.ExecuteScalar();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        InitException(ex);
-                    }
-                }
-            }
-            return count;
-        }
-        #endregion
     }
 }

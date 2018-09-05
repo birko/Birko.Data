@@ -11,13 +11,18 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Attribute\Field.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Attribute\Table.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Attribute\ViewField.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Attribute\View.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Condition\Condition.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Condition\Join.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Create.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Delete.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Drop.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Insert.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Select.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_SelectCount.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_SelectView.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_SelectViewCount.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Update.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\DataBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Field\AbstractField.cs" />
@@ -29,6 +34,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Field\StringField.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Table\Table.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Table\View.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\FieldAttributeException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\StoreException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\TableAttributeException.cs" />
@@ -46,8 +52,5 @@
     <Compile Include="$(MSBuildThisFileDirectory)Store\JsonStore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Store\Settings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Store\DataBaseStore.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)DataBase\Table\" />
   </ItemGroup>
 </Project>

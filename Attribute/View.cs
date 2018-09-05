@@ -4,14 +4,22 @@ using System.Text;
 
 namespace Birko.Data.Attribute
 {
-    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = true)]
     public class View: System.Attribute
     {
-        public string[] Names { get; private set; }
+        public Type ModelLeft { get; private set; }
+        public Type ModelRight { get; private set; }
+        public string ModelProperyLeft { get; private set; }
+        public string ModelProperyRight { get; private set; }
+        public string Name { get; internal set; }
 
-        public View(string[] names)
+        public View(Type modelLeft, Type modelRight, string modelProperyLeft, string modelProperyRight, string name = null)
         {
-            Names = names;
+            ModelLeft = modelLeft;
+            ModelRight = modelRight;
+            ModelProperyLeft = modelProperyLeft;
+            ModelProperyRight = modelProperyRight;
+            Name = name;
         }
     }
 }
