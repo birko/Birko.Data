@@ -45,14 +45,22 @@ namespace Birko.Data.DataBase.Table
             if (!string.IsNullOrEmpty(tableName) && field != null)
             {
                 Table table = null;
-                if (Tables != null && Tables.Any() && Tables.Any(x => x.Name == Name))
+                if (Tables != null && Tables.Any() && Tables.Any(x => x.Name == tableName))
                 {
-                    table = Tables.FirstOrDefault(x => x.Name == Name);
+                    table = Tables.FirstOrDefault(x => x.Name == tableName);
                 }
                 else
                 {
                     table = new Table() { Name = tableName };
                     Tables = (Tables == null) ? new[] { table } : Tables.Concat(new[] { table });
+                }
+                if (table.Fields == null)
+                {
+                    table.Fields = new Dictionary<string, AbstractField>();
+                }
+                if (!table.Fields.ContainsKey(field.Name))
+                {
+                    table.Fields.Add(field.Name, field);
                 }
             }
             return this;

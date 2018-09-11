@@ -68,12 +68,12 @@ namespace Birko.Data.DataBase.Connector
 
         public void Select(Type type, Action<object> resultAction, LambdaExpression expr)
         {
-            Select(type, resultAction, DataBase.ParseExpression(expr));
+            Select(type, resultAction, (expr != null) ? DataBase.ParseExpression(expr) : null);
         }
 
         public void Select(Type[] types, Action<IEnumerable<object>> resultAction, LambdaExpression expr)
         {
-            Select(types, resultAction, DataBase.ParseExpression(expr));
+            Select(types, resultAction, (expr != null) ? DataBase.ParseExpression(expr) : null);
         }
 
         public void Select(Type type, Action<object> resultAction, IEnumerable<Condition.Condition> conditions = null)

@@ -5,7 +5,7 @@ using System.Text;
 namespace Birko.Data.Attribute
 {
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = true)]
-    public class View: System.Attribute
+    public class View : System.Attribute
     {
         public Type ModelLeft { get; private set; }
         public Type ModelRight { get; private set; }

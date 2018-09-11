@@ -10,7 +10,7 @@ namespace Birko.Data.DataBase.Connector
     {
         public void SelectView(Type type, Action<object> readAction, LambdaExpression expr)
         {
-            SelectView(type, readAction, DataBase.ParseExpression(expr));
+            SelectView(type, readAction, (expr != null) ? DataBase.ParseExpression(expr) : null);
         }
 
         public void SelectView(Type type, Action<object> readAction, IEnumerable<Condition.Condition> conditions = null)
@@ -27,7 +27,7 @@ namespace Birko.Data.DataBase.Connector
 
         public void Select(Table.View view, Action<IDictionary<int, string>, DbDataReader> readAction, LambdaExpression expr)
         {
-            Select(view, readAction, DataBase.ParseExpression(expr));
+            Select(view, readAction, (expr != null) ? DataBase.ParseExpression(expr) : null);
         }
 
         public void Select(Table.View view, Action<IDictionary<int, string>, DbDataReader> readAction = null, IEnumerable<Condition.Condition> conditions = null)

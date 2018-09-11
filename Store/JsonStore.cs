@@ -40,9 +40,25 @@ namespace Birko.Data.Store
             }
         }
 
-        public IEnumerable<T> List()
+        public void List(Action<T> action)
         {
-            return _items.AsEnumerable();
+            List(null, action);
+        }
+
+        public void List(Expression<Func<T, bool>> filter, Action<T> action)
+        {
+            if(_items != null && _items.Any() && action != null)
+            {
+                var items = _items.AsEnumerable<T>();
+                if (filter != null)
+                {
+                    items = items.Where(filter.Compile());
+                }
+                foreach (T item in items)
+                {
+                    action?.Invoke(item);
+                }
+            }
         }
 
         public long Count()

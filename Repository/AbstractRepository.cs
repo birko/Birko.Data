@@ -12,28 +12,31 @@ namespace Birko.Data.Repository
         protected string _path = null;
         protected Store.IStore<TModel> _store;
 
-        public virtual TViewModel Create(TViewModel data)
+        public virtual TViewModel Create(TViewModel data, ProcessDataDelegate processDelegate = null)
         {
             if (_store != null && data != null)
             {
                 TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
                 item.LoadFrom(data);
+                processDelegate?.Invoke(item);
                 _store.Save(item);
                 data.LoadFrom(item);
-                _store.StoreChanges();
+                StoreChanges();
             }
             return data;
         }
 
         public virtual TViewModel Delete(Guid Id)
         {
-            if (_store != null && _store.List() != null && _store.List().Any(x => x.Guid.Value == Id))
+            if (_store != null && _store.Count(x => x.Guid.Value == Id) > 0)
             {
-                var item = _store.List().FirstOrDefault(x => x.Guid.Value == Id);
-                _store.Delete(item);
-                _store.StoreChanges();
                 TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
-                result.LoadFrom(item);
+                _store.List(x => x.Guid.Value == Id, (item) =>
+                {
+                    _store.Delete(item);
+                    result.LoadFrom(item);
+                });
+                StoreChanges();
                 return result;
             }
             return default(TViewModel);
@@ -46,39 +49,48 @@ namespace Birko.Data.Repository
 
         public virtual TViewModel Read(Guid Id)
         {
-            if (_store != null && _store.List() != null && _store.List().Any(x => x.Guid == Id))
+            if (_store != null && _store.Count(x => x.Guid.Value == Id) > 0)
             {
-                var item = _store.List().FirstOrDefault(x => x.Guid == Id);
                 TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
-                result.LoadFrom(item);
+                _store.List(x => x.Guid.Value == Id, (item) =>
+                {
+                    result.LoadFrom(item);
+                });
+
                 return result;
             }
             return default(TViewModel);
         }
 
-        public virtual IEnumerable<TViewModel> Read()
+        public virtual void Read(Action<TViewModel> readAction)
         {
-            if (_store != null && _store.List() != null)
+            if (_store != null && _store.Count() > 0 && readAction != null)
             {
-                foreach (var item in _store.List())
+                _store.List((item) =>
                 {
                     TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
                     result.LoadFrom(item);
-                    yield return result;
-                }
+                    readAction?.Invoke(result);
+                });
             }
         }
 
-        public TViewModel Update(Guid Id, TViewModel data)
+        public TViewModel Update(Guid Id, TViewModel data, ProcessDataDelegate processDelegate = null)
         {
             if (_store != null)
             {
                 TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
                 item.LoadFrom(data);
+                processDelegate?.Invoke(item);
                 _store.Save(item);
-                _store.StoreChanges();
+                StoreChanges();
             }
             return data;
+        }
+
+        public void StoreChanges()
+        {
+            _store?.StoreChanges();
         }
     }
 }

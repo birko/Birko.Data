@@ -42,20 +42,23 @@ namespace Birko.Data.Store
             }
         }
 
-        public IEnumerable<T> List()
+        public void List(Action<T> action)
         {
-            var list = new List<T>();
-            if (Connector != null)
+            List(null, action);
+        }
+
+        public void List(Expression<Func<T, bool>> filter, Action<T> action)
+        {
+            if (Connector != null && action != null)
             {
                 Connector.Select(typeof(T), (data) =>
                 {
                     if (data != null)
                     {
-                        list.Add((T)data);
+                        action?.Invoke((T)data);
                     }
-                });
+                }, filter);
             }
-            return list.AsEnumerable();
         }
 
         public long Count()

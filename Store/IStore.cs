@@ -7,7 +7,8 @@ namespace Birko.Data.Store
 {
     public interface IStore<T> where T: Model.AbstractModel
     {
-        IEnumerable<T> List();
+        void List(Action<T> listAction);
+        void List(Expression<Func<T, bool>> filter, Action<T> listAction);
         long Count();
         long Count(Expression<Func<T, bool>> filter);
         void Init();
