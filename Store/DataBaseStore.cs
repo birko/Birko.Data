@@ -79,7 +79,7 @@ namespace Birko.Data.Store
             return 0;
         }
 
-        public void Save(T data)
+        public void Save(T data, StoreDataDelegate storeDelegate = null)
         {
             if (data != null)
             {
@@ -110,6 +110,7 @@ namespace Birko.Data.Store
                         _updateList[data.Guid.Value] = data;
                     }
                 }
+                storeDelegate?.Invoke(data);
             }
         }
 

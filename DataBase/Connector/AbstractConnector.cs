@@ -51,6 +51,24 @@ namespace Birko.Data.DataBase.Connector
             }
         }
 
+        private object EscapeValue(object item)
+        {
+            if(item is string)
+            {
+                return (item as string).Replace("'", "''");
+            }
+            return item;
+        }
+
+        public virtual DbCommand AddParameter(DbCommand command, string name, object value)
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = name;
+            parameter.Value = value;
+            command.Parameters.Add(parameter);
+            return command;
+        }
+
         public virtual string ConditionDefinition(Condition.Condition condition, DbCommand command)
         {
             var result = new StringBuilder();
@@ -171,11 +189,6 @@ namespace Birko.Data.DataBase.Connector
                                 }
                             }
                         }
-                        switch (condition.Type)
-                        {
-                            case Condition.ConditionType.Like: result.Append("%"); break;
-                            case Condition.ConditionType.EndsWith: result.Append("%"); break;
-                        }
                         if (!condition.IsField)
                         {
                             if (condition.Type == Condition.ConditionType.In)
@@ -183,10 +196,8 @@ namespace Birko.Data.DataBase.Connector
                                 int i = 0;
                                 foreach (var item in condition.Values)
                                 {
-                                    var parameter = command.CreateParameter();
-                                    parameter.ParameterName = "@WHERE" + condition.Name + i;
-                                    parameter.Value = item;
-                                    command.Parameters.Add(parameter);
+                                    var value  = EscapeValue(item);
+                                    AddParameter(command, "@WHERE" + condition.Name + i, value);
                                     i++;
                                 }
                             }
@@ -197,24 +208,24 @@ namespace Birko.Data.DataBase.Connector
                                 {
                                     var first = enumerator.Current;
                                     {
-                                        var parameter = command.CreateParameter();
-                                        parameter.ParameterName = "@WHERE" + condition.Name;
+                                        object value = null;
                                         switch (condition.Type)
                                         {
                                             case Condition.ConditionType.StartsWith:
-                                                parameter.Value = "%" + (first as string);
+                                                value = "%" + (first as string);
                                                 break;
                                             case Condition.ConditionType.Like:
-                                                parameter.Value = "%" + (first as string) + "%";
+                                                value = "%" + (first as string) + "%";
                                                 break;
                                             case Condition.ConditionType.EndsWith:
-                                                parameter.Value = (first as string) + "%";
+                                                value = (first as string) + "%";
                                                 break;
                                             default:
-                                                parameter.Value = first;
+                                                value = first;
                                                 break;
                                         }
-                                        command.Parameters.Add(parameter);
+                                        value = EscapeValue(value);
+                                        AddParameter(command, "@WHERE" + condition.Name, value);
                                     }
                                 }
                             }

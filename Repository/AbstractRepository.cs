@@ -18,20 +18,19 @@ namespace Birko.Data.Repository
             {
                 TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
                 item.LoadFrom(data);
-                processDelegate?.Invoke(item);
-                _store.Save(item);
-                data.LoadFrom(item);
+                _store.Save(item, (x) => processDelegate?.Invoke(x));
                 StoreChanges();
+                data.LoadFrom(item);
             }
             return data;
         }
 
         public virtual TViewModel Delete(Guid Id)
         {
-            if (_store != null && _store.Count(x => x.Guid.Value == Id) > 0)
+            if (_store != null && _store.Count(x => x.Guid == Id) > 0)
             {
                 TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
-                _store.List(x => x.Guid.Value == Id, (item) =>
+                _store.List(x => x.Guid == Id, (item) =>
                 {
                     _store.Delete(item);
                     result.LoadFrom(item);
@@ -52,7 +51,7 @@ namespace Birko.Data.Repository
             if (_store != null && _store.Count(x => x.Guid.Value == Id) > 0)
             {
                 TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
-                _store.List(x => x.Guid.Value == Id, (item) =>
+                _store.List(x => x.Guid == Id, (item) =>
                 {
                     result.LoadFrom(item);
                 });
@@ -81,9 +80,9 @@ namespace Birko.Data.Repository
             {
                 TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
                 item.LoadFrom(data);
-                processDelegate?.Invoke(item);
-                _store.Save(item);
+                _store.Save(item, (x) => processDelegate?.Invoke(x));
                 StoreChanges();
+                data.LoadFrom(item);
             }
             return data;
         }
