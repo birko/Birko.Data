@@ -72,25 +72,39 @@ namespace Birko.Data.Store
             return _items?.Where(filter.Compile()).Count() ?? 0;
         }
 
-        public void Save(T data, StoreDataDelegate storeDelegate = null)
+        public void Save(T data, StoreDataDelegate<T> storeDelegate = null)
         {
             if (data != null)
             {
-                if (data.Guid == null || !_items.Any(x => x.Guid == data.Guid)) // new
+                bool newItem = data.Guid == null;
+                if (newItem) // new
                 {
                     data.Guid = Guid.NewGuid();
-                    _items.Add(data);
                 }
                 else //update
                 {
-                    var item = _items.FirstOrDefault(x => x.Guid == data.Guid);
-                    if (item is Model.AbstractLogModel)
+                    if (data is Model.AbstractLogModel)
                     {
-                        (item as Model.AbstractLogModel).UpdatedAt = DateTime.UtcNow;
+                        (data as Model.AbstractLogModel).UpdatedAt = DateTime.UtcNow;
                     }
-                    data.CopyTo(item);
                 }
-                storeDelegate?.Invoke(data);
+                data = storeDelegate?.Invoke(data) ?? data;
+                if (data != null)
+                {
+                    if (newItem) // new
+                    {
+                        _items.Add(data);
+                    }
+                    else //update
+                    {
+                        var item = _items.FirstOrDefault(x => x.Guid == data.Guid);
+                        if (item is Model.AbstractLogModel)
+                        {
+                            (item as Model.AbstractLogModel).UpdatedAt = DateTime.UtcNow;
+                        }
+                        data.CopyTo(item);
+                    }
+                }
             }
         }
 

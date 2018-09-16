@@ -79,21 +79,15 @@ namespace Birko.Data.Store
             return 0;
         }
 
-        public void Save(T data, StoreDataDelegate storeDelegate = null)
+        public void Save(T data, StoreDataDelegate<T> storeDelegate = null)
         {
             if (data != null)
             {
-                if (data.Guid == null) // new
+                bool newItem = data.Guid == null;
+                if (newItem) // new
                 {
                     data.Guid = Guid.NewGuid();
-                    if (!_insertList.ContainsKey(data.Guid.Value))
-                    {
-                        _insertList.Add(data.Guid.Value, data);
-                    }
-                    else
-                    {
-                        _insertList[data.Guid.Value] = data;
-                    }
+
                 }
                 else //update
                 {
@@ -101,16 +95,33 @@ namespace Birko.Data.Store
                     {
                         (data as Model.AbstractLogModel).UpdatedAt = DateTime.UtcNow;
                     }
-                    if (!_updateList.ContainsKey(data.Guid.Value))
+                }
+                data = storeDelegate?.Invoke(data) ?? data;
+                if (data != null)
+                {
+                    if (newItem)
                     {
-                        _updateList.Add(data.Guid.Value, data);
+                        if (!_insertList.ContainsKey(data.Guid.Value))
+                        {
+                            _insertList.Add(data.Guid.Value, data);
+                        }
+                        else
+                        {
+                            _insertList[data.Guid.Value] = data;
+                        }
                     }
                     else
                     {
-                        _updateList[data.Guid.Value] = data;
+                        if (!_updateList.ContainsKey(data.Guid.Value))
+                        {
+                            _updateList.Add(data.Guid.Value, data);
+                        }
+                        else
+                        {
+                            _updateList[data.Guid.Value] = data;
+                        }
                     }
                 }
-                storeDelegate?.Invoke(data);
             }
         }
 

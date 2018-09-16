@@ -50,8 +50,8 @@ namespace Birko.Data.DataBase
         #region Attributes
         public static AbstractField GetField<T, P>(Expression<Func<T, P>> expr)
         {
-            var expression = (MemberExpression)expr.Body;
-            PropertyInfo propInfo = expression.Member as PropertyInfo;
+            var expression = (UnaryExpression)expr.Body;
+            PropertyInfo propInfo = (expression.Operand as MemberExpression).Member as PropertyInfo;
             var fields = LoadField(propInfo);
             return fields.First();
         }

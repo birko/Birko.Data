@@ -50,6 +50,7 @@ namespace Birko.Data.Repository
                     {
                         TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
                         result.LoadFrom((data as TModel));
+                        StoreHash((data as TModel));
                         readAction?.Invoke(result);
                     }
                 }, expr);
@@ -73,12 +74,24 @@ namespace Birko.Data.Repository
             }
         }
 
-        public virtual void Update(IDictionary<Expression<Func<TModel, bool>>, object> expresions, Expression<Func<TModel, bool>> expr)
+        public virtual void Update(IDictionary<Expression<Func<TModel, object>>, object> expresions, Expression<Func<TModel, bool>> expr, Action<TViewModel> readAction, Expression<Func<TModel, bool>> readExpr)
         {
             if (_store != null)
             {
                 var connector = (_store as Store.DataBaseStore<TConnector, TModel>).Connector;
+                if (typeof(TModel).IsSubclassOf(typeof(Model.AbstractLogModel)))
+                {
+                    Expression<Func<TModel, object>>  updateAtFunc =  m => (m as Model.AbstractLogModel).UpdatedAt;
+                    if (!expresions.ContainsKey(updateAtFunc))
+                    {
+                        expresions.Add(updateAtFunc, DateTime.UtcNow);
+                    }
+                }
+
                 connector.Update(typeof(TModel), expresions, expr);
+                Read(readExpr, (data) => {
+                    readAction?.Invoke(data);
+                });
             }
         }
     }
