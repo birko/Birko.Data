@@ -25,7 +25,7 @@ namespace Birko.Data.DataBase.Connector
                 }
             }
 
-            return CreateSelectCommand(db, leftTables ?? view.Tables.Select(x => x.Name), view.GetSelectFields(), view.Join, conditions, view.GetSelectFields(true));
+            return CreateSelectCommand(db, leftTables ?? view.Tables.Select(x => x.Name), view.GetSelectFields(), view.Join, conditions, view.HasAggregateFields() ? view.GetSelectFields(true) : null);
         }
 
 

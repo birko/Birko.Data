@@ -31,6 +31,11 @@ namespace Birko.Data.DataBase.Table
             return fields;
         }
 
+        public bool HasAggregateFields()
+        {
+            return Fields?.Any(x => x.Value?.IsAggregate ?? false) ?? false;
+        }
+
         internal IEnumerable<Field.AbstractField> GetPrimaryFields()
         {
             return Fields?.Values.Where(x => x.IsPrimary);

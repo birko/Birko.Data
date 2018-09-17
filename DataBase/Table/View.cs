@@ -121,5 +121,10 @@ namespace Birko.Data.DataBase.Table
             }
             return result;
         }
+
+        public bool HasAggregateFields()
+        {
+            return Tables?.Any(x => x?.HasAggregateFields() ?? false) ?? false;
+        }
     }
 }
