@@ -16,31 +16,62 @@ namespace Birko.Data.DataBase.Connector
 
         public virtual DbCommand CreateSelectCommand(DbConnection db, Table.View view, IEnumerable<Condition.Condition> conditions = null)
         {
-            return CreateSelectCommand(db, view.Tables.Select(x => x.Name), view.GetSelectFields(), view.Join, conditions);
+            var leftTables = view.Join?.Select(x => x.Left).Distinct().Where(x => !string.IsNullOrEmpty(x)).ToList();
+            if (leftTables != null)
+            {
+                foreach (var tableName in view.Join.Select(x => x.Right).Distinct().Where(x => !string.IsNullOrEmpty(x)))
+                {
+                    leftTables.Remove(tableName);
+                }
+            }
+
+            return CreateSelectCommand(db, leftTables ?? view.Tables.Select(x => x.Name), view.GetSelectFields(), view.Join, conditions, view.GetSelectFields(true));
         }
 
-        public virtual DbCommand CreateSelectCommand(DbConnection db, IEnumerable<string> tableNames, IDictionary<int, string> fields, IEnumerable<Condition.Join> joinconditions = null, IEnumerable<Condition.Condition> conditions = null)
+
+        public virtual DbCommand CreateSelectCommand(DbConnection db, IEnumerable<string> tableNames, IDictionary<int, string> fields, IEnumerable<Condition.Join> joinconditions = null, IEnumerable<Condition.Condition> conditions = null, IDictionary<int, string> groupFields = null)
         {
             var command = db.CreateCommand();
             command.CommandText = "SELECT " + string.Join(", ", fields.Values) + " FROM ";
 
-            var joins = (joinconditions != null && joinconditions.Any())
-                ? joinconditions.Where(x => !string.IsNullOrEmpty(x.Right)).Where(x => x != null).GroupBy(x => x.Left).ToDictionary(x => x.Key, x => x.AsEnumerable())
-                : new Dictionary<string, IEnumerable<Condition.Join>>();
+            Dictionary<string, List<Condition.Join>> joins = new Dictionary<string, List<Condition.Join>>();
+            if (joinconditions != null && joinconditions.Any())
+            {
+                string prevleft = null;
+                string prevright = null;
+                foreach (var join in joinconditions)
+                {
+                    if (!string.IsNullOrEmpty(prevleft) && !string.IsNullOrEmpty(prevright) && !joins.ContainsKey(join.Left) && prevright == join.Left && joins.ContainsKey(prevleft))
+                    {
+                        joins[prevleft].Add(join);
+                    }
+                    else
+                    {
+                        if (!joins.ContainsKey(join.Left))
+                        {
+                            joins.Add(join.Left, new List<Condition.Join>());
+                        }
+                        joins[join.Left].Add(join);
+                        prevleft = join.Left;
+                    }
+                    prevright = join.Right;
+                }
+            }
 
             int i = 0;
-            foreach (var table in tableNames)
+            foreach (var table in tableNames.Distinct())
             {
                 if (i > 0)
                 {
                     command.CommandText += ", ";
                 }
                 command.CommandText += table;
-                if (joins.ContainsKey(table))
+                if (joins != null && joins.ContainsKey(table))
                 {
-                    foreach (var join in joins[table])
+                    var joingroups = joins[table].GroupBy(x => new { x.Right, x.JoinType }).ToDictionary(x => x.Key, x => x.SelectMany(y => y.Conditions).Where(z => z != null));
+                    foreach (var joingroup in joingroups.Where(x=>x.Value.Any()))
                     {
-                        switch (join.JoinType)
+                        switch (joingroup.Key.JoinType)
                         {
                             case Condition.JoinType.Inner:
                                 command.CommandText += " INNER JOIN ";
@@ -53,16 +84,21 @@ namespace Birko.Data.DataBase.Connector
                                 command.CommandText += " CROSS JOIN ";
                                 break;
                         }
-                        if (join.JoinType != Condition.JoinType.Cross && join.Conditions != null && join.Conditions.Any())
+                        command.CommandText += joingroup.Key.Right;
+                        if (joingroup.Key.JoinType != Condition.JoinType.Cross && joingroup.Value != null && joingroup.Value.Any())
                         {
                             command.CommandText += " ON (";
-                            command.CommandText += ConditionDefinition(conditions, command);
+                            command.CommandText += ConditionDefinition(joingroup.Value, command);
                             command.CommandText += ")";
                         }
                     }
                 }
             }
             AddWhere(conditions, command);
+            if (groupFields != null && groupFields.Any())
+            {
+                command.CommandText += " GROUP BY " + string.Join(", ", groupFields.Values);
+            }
             return command;
         }
 
@@ -124,7 +160,7 @@ namespace Birko.Data.DataBase.Connector
                     var tablefields = table.GetSelectFields();
                     foreach (var kvp in tablefields)
                     {
-                        fields.Add(i, table.Name + "." + kvp.Value);
+                        fields.Add(i, kvp.Value);
                         i++;
                     }
                 }

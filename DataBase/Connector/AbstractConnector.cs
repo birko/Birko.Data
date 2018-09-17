@@ -10,6 +10,7 @@ namespace Birko.Data.DataBase.Connector
 {
     public delegate void InitConnector(AbstractConnector connector);
     public delegate void OnException(Exception ex);
+
     public abstract partial class AbstractConnector
     {
         protected readonly Store.PasswordSettings _settings = null;
@@ -62,10 +63,17 @@ namespace Birko.Data.DataBase.Connector
 
         public virtual DbCommand AddParameter(DbCommand command, string name, object value)
         {
-            var parameter = command.CreateParameter();
-            parameter.ParameterName = name;
-            parameter.Value = value;
-            command.Parameters.Add(parameter);
+            if (command.Parameters.Contains(name))
+            {
+                command.Parameters[name].Value = value ?? DBNull.Value;
+            }
+            else
+            {
+                var parameter = command.CreateParameter();
+                parameter.ParameterName = name;
+                parameter.Value = value ?? DBNull.Value;
+                command.Parameters.Add(parameter);
+            }
             return command;
         }
 
@@ -172,7 +180,7 @@ namespace Birko.Data.DataBase.Connector
                                 {
                                     result.Append(", ");
                                 }
-                                result.Append("@WHERE" + condition.Name + i);
+                                result.Append("@WHERE" + condition.Name.Replace(".", string.Empty) + i);
                                 i++;
                             }
                             result.Append(")");
@@ -185,7 +193,7 @@ namespace Birko.Data.DataBase.Connector
                                 var first = enumerator.Current;
                                 if (first != null)
                                 {
-                                    result.Append((condition.IsField) ? first : "@WHERE" + condition.Name);
+                                    result.Append((condition.IsField) ? first : "@WHERE" + condition.Name.Replace(".", string.Empty));
                                 }
                             }
                         }
@@ -197,7 +205,7 @@ namespace Birko.Data.DataBase.Connector
                                 foreach (var item in condition.Values)
                                 {
                                     var value  = EscapeValue(item);
-                                    AddParameter(command, "@WHERE" + condition.Name + i, value);
+                                    AddParameter(command, "@WHERE" + condition.Name.Replace(".", string.Empty) + i, value);
                                     i++;
                                 }
                             }
@@ -225,7 +233,7 @@ namespace Birko.Data.DataBase.Connector
                                                 break;
                                         }
                                         value = EscapeValue(value);
-                                        AddParameter(command, "@WHERE" + condition.Name, value);
+                                        AddParameter(command, "@WHERE" + condition.Name.Replace(".", string.Empty), value);
                                     }
                                 }
                             }

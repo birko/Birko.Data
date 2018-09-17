@@ -8,8 +8,8 @@ namespace Birko.Data.DataBase.Field
 {
     public class StringField : AbstractField
     {
-        public StringField(System.Reflection.PropertyInfo property, string name, bool primary = false, bool unique = false, bool autoincrement = false)
-            : base(property, name, DbType.String, primary, false, unique, autoincrement)
+        public StringField(System.Reflection.PropertyInfo property, string name, bool primary = false, bool unique = false)
+            : base(property, name, DbType.String, primary, false, unique)
         {
         }
 
@@ -23,6 +23,20 @@ namespace Birko.Data.DataBase.Field
             {
                 Property.SetValue(value, reader.GetString(index), null);
             }
+        }
+    }
+
+    public class StringFunction : FunctionField
+    {
+        public StringFunction(System.Reflection.PropertyInfo property, string name, object[] parameters)
+            : base(property, name, parameters, DbType.String, true)
+        {
+
+        }
+
+        public override void Read(object value, DbDataReader reader, int index)
+        {
+            Property.SetValue(value, reader.GetString(index), null);
         }
     }
 }

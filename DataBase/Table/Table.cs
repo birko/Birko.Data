@@ -10,13 +10,23 @@ namespace Birko.Data.DataBase.Table
         public string Name { get; set; }
         public Dictionary<string, Field.AbstractField> Fields { get; set; }
 
-        public IDictionary<int, string> GetSelectFields()
+        public IDictionary<int, string> GetSelectFields(bool withName  = false, bool notAggregate = false)
         {
             Dictionary<int, string> fields = new Dictionary<int, string>();
             var keys = Fields.Keys.ToArray();
             for (int i = 0; i < keys.Length; i++)
             {
-                fields.Add(i, keys[i]);
+                var field = Fields[keys[i]];
+                if (!notAggregate || !field.IsAggregate)
+                {
+                    var fieldName = (field.IsAggregate)
+                        ? string.Format("{0}({1}) as {2}",
+                            field.Name,
+                            string.Join(",", (field as Field.FunctionField).Parameters?.Select(x=> string.Format("{0}{1}", (withName ? Name + "." : string.Empty), x)) ?? new string[0]),
+                            keys[i])
+                        : (withName ? Name + "." : string.Empty) + keys[i];
+                    fields.Add(i, fieldName);
+                }
             }
             return fields;
         }

@@ -71,19 +71,16 @@ namespace Birko.Data.DataBase.Connector
                                 command.CommandText = "INSERT INTO " + tableName
                                     + " (" + string.Join(", ", first.Keys) + ")"
                                     + " VALUES"
-                                    + " (" + string.Join(", ", first.Keys.Select(x => "@" + x)) + ")";
+                                    + " (" + string.Join(", ", first.Keys.Select(x => "@" + x.Replace(".", string.Empty))) + ")";
                                 foreach (var kvp in first)
                                 {
-                                    var parameter = command.CreateParameter();
-                                    parameter.ParameterName = "@" + kvp.Key;
-                                    parameter.Value = kvp.Value;
-                                    command.Parameters.Add(parameter);
+                                    AddParameter(command, "@" + kvp.Key.Replace(".", string.Empty), kvp.Value);
                                 }
                                 foreach (var item in values)
                                 {
                                     foreach (var kvp in item)
                                     {
-                                        command.Parameters["@" + kvp.Key].Value = kvp.Value ?? DBNull.Value;
+                                        AddParameter(command, "@" + kvp.Key.Replace(".", string.Empty), kvp.Value);
                                     }
                                     command.ExecuteNonQuery();
                                 }

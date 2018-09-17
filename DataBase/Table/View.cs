@@ -40,7 +40,7 @@ namespace Birko.Data.DataBase.Table
             return this;
         }
 
-        public View AddField(string tableName, AbstractField field)
+        public View AddField(string tableName, AbstractField field, string name = null)
         {
             if (!string.IsNullOrEmpty(tableName) && field != null)
             {
@@ -58,9 +58,10 @@ namespace Birko.Data.DataBase.Table
                 {
                     table.Fields = new Dictionary<string, AbstractField>();
                 }
-                if (!table.Fields.ContainsKey(field.Name))
+                var fieldName = (!string.IsNullOrEmpty(name)) ? name : field.Name;
+                if (!table.Fields.ContainsKey(fieldName))
                 {
-                    table.Fields.Add(field.Name, field);
+                    table.Fields.Add(fieldName, field);
                 }
             }
             return this;
@@ -82,23 +83,38 @@ namespace Birko.Data.DataBase.Table
         {
             if (condition != null)
             {
-                Join = (Join == null) ? new[] { condition } : Join.Concat(new[] { condition });
+                if (Join == null)
+                {
+                    Join = new[] { condition };
+                }
+                else if (Join.Any(x => x.Left == condition.Left && x.Right == condition.Right && x.JoinType == condition.JoinType))
+                {
+                    var join = Join.FirstOrDefault(x => x.Left == condition.Left && x.Right == condition.Right && x.JoinType == condition.JoinType);
+                    if (join != null)
+                    {
+                        join.AddConditions(condition.Conditions);
+                    }
+                }
+                else
+                {
+                    Join = Join.Concat(new[] { condition });
+                }
             }
             return this;
         }
 
-        public IDictionary<int, string> GetSelectFields()
+        public IDictionary<int, string> GetSelectFields(bool notAggregate = false)
         {
             var result = new Dictionary<int, string>();
             int i = 0;
             foreach (var table in Tables)
             {
-                var fields = table?.GetSelectFields();
+                var fields = table?.GetSelectFields(true, notAggregate);
                 if (fields != null && fields.Any())
                 {
                     foreach (var field in fields)
                     {
-                        result.Add(i, table.Name + "." + field.Value);
+                        result.Add(i, field.Value);
                         i++;
                     }
                 }

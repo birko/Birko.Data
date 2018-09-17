@@ -102,14 +102,11 @@ namespace Birko.Data.DataBase.Connector
                     {
                         using (var command = db.CreateCommand())
                         {
-                            command.CommandText = "UPDATE " + tableName + " SET " + string.Join(", ", fields.Values.Select(x => x + "= @SET" + x));
+                            command.CommandText = "UPDATE " + tableName + " SET " + string.Join(", ", fields.Values.Select(x => x + "= @SET" + x.Replace(".", string.Empty)));
                             AddWhere(conditions, command);
                             foreach (var kvp in values)
                             {
-                                var parameter = command.CreateParameter();
-                                parameter.ParameterName = "@SET" + kvp.Key;
-                                parameter.Value = kvp.Value ?? DBNull.Value;
-                                command.Parameters.Add(parameter);
+                                AddParameter(command, "@SET" + kvp.Key.Replace(".", string.Empty), kvp.Value);
                             }
                             command.ExecuteNonQuery();
                         }
