@@ -91,20 +91,37 @@ namespace Birko.Data.DataBase
                                     var table = LoadTable(fieldAttr.ModelType);
                                     if (table != null)
                                     {
-                                        var tablefield = table.GetFieldByPropertyName(fieldAttr.ModelProperyName);
-                                        if (tablefield != null)
+                                        string name = !string.IsNullOrEmpty(fieldAttr.ModelProperyName) ? fieldAttr.ModelProperyName : field.Name;
+                                        if (_fieldsCache.ContainsKey(type) && _fieldsCache[type].Any(x => x.Name == name))
                                         {
-                                            if (fieldAttr is Attribute.AggregateField)
+                                            view.AddField(table.Name, _fieldsCache[type].FirstOrDefault(x => x.Name == name));
+                                        }
+                                        else
+                                        {
+                                            var tableField = table.GetFieldByPropertyName(fieldAttr.ModelProperyName);
+                                            if (tableField != null)
                                             {
-                                                var functionField = FunctionField.CreateFunctionAggregateField(field, (Attribute.AggregateField)fieldAttr, tablefield);
-                                                if (functionField != null)
+                                                string tableFieldName = null;
+                                                if (fieldAttr is Attribute.AggregateField)
                                                 {
-                                                    view.AddField(table.Name, functionField, tablefield.Name + functionField.Name);
+                                                    tableFieldName = tableField.Name;
+                                                    var functionField = FunctionField.CreateFunctionAggregateField(field, (Attribute.AggregateField)fieldAttr, tableField);
+                                                    if (functionField != null)
+                                                    {
+                                                        tableFieldName += functionField.Name;
+                                                        tableField = functionField;
+                                                    }
+                                                    view.AddField(table.Name, tableField, tableField.Name);
                                                 }
-                                            }
-                                            else
-                                            {
-                                                view.AddField(table.Name, tablefield);
+                                                else
+                                                {
+                                                    var loadedFields = LoadField(tableField.Property);
+                                                    foreach (var loadField in loadedFields)
+                                                    {
+                                                        loadField.Property = field;
+                                                        view.AddField(table.Name, loadField);
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -116,7 +133,15 @@ namespace Birko.Data.DataBase
                             }
                         }
                     }
-                    _viewCache.Add(type, view);
+                    if (view.Tables != null)
+                    {
+                        _fieldsCache.Add(type, view.Tables.SelectMany(x => x.Fields.Values).ToArray());
+                        _viewCache.Add(type, view);
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
                 else
                 {
@@ -137,10 +162,9 @@ namespace Birko.Data.DataBase
                 {
                     foreach (Attribute.ViewField fieldAttr in fieldAttrs)
                     {
-                        string name = !string.IsNullOrEmpty(fieldAttr.ModelProperyName) ? fieldAttr.ModelProperyName : field.Name;
-                        if (_fieldsCache.ContainsKey(fieldAttr.ModelType) && _fieldsCache[type].Any(x => x.Property?.Name == name))
+                        if (_fieldsCache.ContainsKey(type) && _fieldsCache[type].Any(x => x.Property.Name == field.Name))
                         {
-                            tableFields.Add(_fieldsCache[type].FirstOrDefault(x => x.Property?.Name == name));
+                            tableFields.Add(_fieldsCache[type].FirstOrDefault(x => x.Property.Name == field.Name));
                         }
                         else
                         {

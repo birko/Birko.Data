@@ -80,10 +80,9 @@ namespace Birko.Data.DataBase
                     foreach (Attribute.Field fieldAttr in fieldAttrs)
                     {
                         // from cache
-                        string name = !string.IsNullOrEmpty(fieldAttr.Name) ? fieldAttr.Name : field.Name;
-                        if (_fieldsCache.ContainsKey(type) && _fieldsCache[type].Any(x => x.Name == name))
+                        if (_fieldsCache.ContainsKey(type) && _fieldsCache[type].Any(x => x.Property.Name == field.Name))
                         {
-                            tableFields.Add(_fieldsCache[type].FirstOrDefault(x => x.Name == name));
+                            tableFields.Add(_fieldsCache[type].FirstOrDefault(x => x.Property.Name == field.Name));
                         }
                         else
                         {

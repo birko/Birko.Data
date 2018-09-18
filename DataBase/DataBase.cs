@@ -175,9 +175,65 @@ namespace Birko.Data.DataBase
                         var member = (expr as MemberExpression);
                         if (member.Expression?.NodeType == ExpressionType.Parameter)
                         {
+                            var table = LoadTable(member.Member.ReflectedType);
+                            if (table != null)
+                            {
+                                parent.Name = table.Name + ".";
+                            }
+                            else
+                            {
+                                var view = LoadView(member.Member.ReflectedType);
+                                if (view != null)
+                                {
+                                    table = view.Tables.FirstOrDefault(x => x.Fields.Any(y => y.Value.Property.Name == member.Member.Name));
+                                    if (table != null)
+                                    {
+                                        parent.Name = table.Name + ".";
+                                    }
+                                }
+                            }
+
                             var fields = LoadFields(member.Member.ReflectedType);
                             var field = fields.FirstOrDefault(x => x.Property.Name == member.Member.Name);
-                            parent.Name = field?.Name;
+
+                            parent.Name += field?.Name;
+                        }
+                        else if (member.Expression?.NodeType == ExpressionType.MemberAccess)
+                        {
+                            var f = Expression.Lambda(expr).Compile();
+                            var value = f.DynamicInvoke();
+                            var valueType = value.GetType();
+                            List<object> vals = new List<object>();
+                            if (valueType.IsPrimitive || valueType == typeof(string) || valueType == typeof(Guid))
+                            {
+                                vals.Add(value);
+                            }
+                            else if (valueType.IsArray)
+                            {
+                                foreach (var item in (Array)value)
+                                {
+                                    vals.Add(item);
+                                }
+                            }
+                            else
+                            {
+                                var fields = valueType.GetFields();
+                                if (fields.Any())
+                                {
+                                    foreach (var field in fields)
+                                    {
+                                        vals.Add(field.GetValue(value));
+                                    }
+                                }
+                            }
+                            if (parent.Values != null)
+                            {
+                                foreach (var o in parent.Values)
+                                {
+                                    vals.Add(o);
+                                }
+                            }
+                            parent.Values = vals.ToArray();
                         }
                         else
                         {
