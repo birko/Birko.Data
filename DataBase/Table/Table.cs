@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Birko.Data.DataBase.Field;
 
 namespace Birko.Data.DataBase.Table
 {
@@ -29,6 +30,19 @@ namespace Birko.Data.DataBase.Table
                 }
             }
             return fields;
+        }
+
+        internal IEnumerable<AbstractField> GetTableFields(bool notAggregate)
+        {
+            List<AbstractField> tableFields = new List<Field.AbstractField>();
+            foreach (var field in Fields.Where(x => x.Value != null))
+            {
+                if (!notAggregate || !field.Value.IsAggregate)
+                {
+                    tableFields.Add(field.Value);
+                }
+            }
+            return tableFields;
         }
 
         public bool HasAggregateFields()

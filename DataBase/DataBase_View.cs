@@ -154,25 +154,8 @@ namespace Birko.Data.DataBase
         public static int ReadView(DbDataReader reader, object data, int index = 0)
         {
             var type = data.GetType();
-            List<Field.AbstractField> tableFields = new List<Field.AbstractField>();
-            foreach (var field in type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
-            {
-                object[] fieldAttrs = field.GetCustomAttributes(typeof(Attribute.ViewField), true);
-                if (fieldAttrs != null)
-                {
-                    foreach (Attribute.ViewField fieldAttr in fieldAttrs)
-                    {
-                        if (_fieldsCache.ContainsKey(type) && _fieldsCache[type].Any(x => x.Property.Name == field.Name))
-                        {
-                            tableFields.Add(_fieldsCache[type].FirstOrDefault(x => x.Property.Name == field.Name));
-                        }
-                        else
-                        {
-                            tableFields.Add(new StringField(field, fieldAttr.Name));
-                        }
-                    }
-                }
-            }
+            var view = LoadView(type);
+            var tableFields = view?.GetTableFields();
             return Read(tableFields, reader, data, index);
         }
     }

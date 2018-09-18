@@ -122,6 +122,16 @@ namespace Birko.Data.DataBase.Table
             return result;
         }
 
+        internal IEnumerable<AbstractField> GetTableFields(bool notAggregate = false)
+        {
+            List<AbstractField> tableFields = new List<Field.AbstractField>();
+            foreach(var table in Tables.Where(x=> x!= null))
+            {
+                tableFields.AddRange(table.GetTableFields(notAggregate));
+            }
+            return tableFields;
+        }
+
         public bool HasAggregateFields()
         {
             return Tables?.Any(x => x?.HasAggregateFields() ?? false) ?? false;

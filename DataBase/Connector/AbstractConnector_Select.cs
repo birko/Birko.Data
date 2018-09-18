@@ -155,7 +155,7 @@ namespace Birko.Data.DataBase.Connector
             {
                 Dictionary<int, string> fields = new Dictionary<int, string>();
                 int i = 0;
-                foreach(var table in tables)
+                foreach(var table in tables.Where(x=> x != null))
                 {
                     var tablefields = table.GetSelectFields();
                     foreach (var kvp in tablefields)
@@ -164,7 +164,7 @@ namespace Birko.Data.DataBase.Connector
                         i++;
                     }
                 }
-                Select(tables.Select(x=>x.Name), fields, readAction, conditions);
+                Select(tables.Where(x => x != null).Select(x=>x.Name), fields, readAction, conditions);
             }
         }
 
