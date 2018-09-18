@@ -127,10 +127,6 @@ namespace Birko.Data.DataBase
                                     }
                                 }
                             }
-                            else
-                            {
-                                throw new Exceptions.TableAttributeException("No field attributes in type");
-                            }
                         }
                     }
                     if (view.Tables != null)
