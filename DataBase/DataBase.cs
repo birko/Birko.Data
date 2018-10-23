@@ -49,239 +49,379 @@ namespace Birko.Data.DataBase
             return new Condition.Condition(field.Name, new[] { field.Property.GetValue(value, null) });
         }
 
-        public static IEnumerable<Condition.Condition> ParseExpression(Expression expr, Condition.Condition parent = null)
+        public static string ParseExpression(Expression expr, IDictionary<string, object> parameters, bool withTableName = false, Type exprType = null)
         {
             if (expr != null)
             {
-                if (expr.NodeType == ExpressionType.Lambda)
+                if (expr is LambdaExpression lambdaExpression)
                 {
-                    LambdaExpression lambda = (LambdaExpression)expr;
-                    return ParseExpression(lambda.Body);
+                    var type = lambdaExpression.Parameters?.FirstOrDefault()?.Type;
+                    return ParseExpression(lambdaExpression.Body, parameters, withTableName, type);
                 }
-                var basecondition = new Condition.Condition(null, null);
-                if (expr is BinaryExpression)
+                else if (expr is BinaryExpression binaryExpression)
                 {
-                    var binnary = expr as BinaryExpression;
-                    if (expr.NodeType == ExpressionType.AndAlso || expr.NodeType == ExpressionType.OrElse)
+                    var left = ParseExpression(binaryExpression.Left, parameters, withTableName, exprType);
+                    var right = ParseExpression(binaryExpression.Right, parameters, withTableName, exprType);
+                    StringBuilder result = new StringBuilder();
+                    result.Append("(");
+                    result.Append(left);
+                    switch (binaryExpression.NodeType)
                     {
-
-                        var listSub = new List<Condition.Condition>();
-                        listSub.AddRange(ParseExpression(binnary.Left));
-                        var rightConds = ParseExpression(binnary.Right);
-                        if (rightConds != null && rightConds.Any())
-                        {
-                            foreach (var right in rightConds)
-                            {
-                                right.IsOr = expr.NodeType == ExpressionType.OrElse;
-                                listSub.Add(right);
-                            }
-                        }
-                        basecondition.SubConditions = listSub.AsEnumerable();
-                        return basecondition.SubConditions;
+                        case ExpressionType.Add:
+                        case ExpressionType.AddChecked:
+                            result.Append(" + ");
+                            break;
+                        case ExpressionType.Subtract:
+                        case ExpressionType.SubtractChecked:
+                            result.Append(" - ");
+                            break;
+                        case ExpressionType.Multiply:
+                        case ExpressionType.MultiplyChecked:
+                            result.Append(" * ");
+                            break;
+                        case ExpressionType.Divide:
+                            result.Append(" / ");
+                            break;
+                        case ExpressionType.Modulo:
+                            result.Append(" % ");
+                            break;
+                        case ExpressionType.GreaterThan:
+                            result.Append(" > ");
+                            break;
+                        case ExpressionType.GreaterThanOrEqual:
+                            result.Append(" >= ");
+                            break;
+                        case ExpressionType.LessThan:
+                            result.Append(" < ");
+                            break;
+                        case ExpressionType.LessThanOrEqual:
+                            result.Append(" <= ");
+                            break;
+                        case ExpressionType.Equal:
+                            result.Append(" = ");
+                            break;
+                        case ExpressionType.NotEqual:
+                            result.Append(" <> ");
+                            break;
+                        case ExpressionType.And:
+                        case ExpressionType.AndAlso:
+                            result.Append(" AND ");
+                            break;
+                        case ExpressionType.Or:
+                        case ExpressionType.OrElse:
+                            result.Append(" OR ");
+                            break;
                     }
-                    else if (
-                        expr.NodeType == ExpressionType.Equal
-                        || expr.NodeType == ExpressionType.LessThan
-                        || expr.NodeType == ExpressionType.LessThanOrEqual
-                        || expr.NodeType == ExpressionType.GreaterThan
-                        || expr.NodeType == ExpressionType.GreaterThanOrEqual
-                        || expr.NodeType == ExpressionType.Not
-                        || expr.NodeType == ExpressionType.NotEqual
+                    result.Append(right);
+                    result.Append(")");
+                    return result.ToString();
+                }
+                else if (expr is MethodCallExpression callExpression)
+                {
+                    var key = "@Constat" + parameters.Count;
+                    var f = Expression.Lambda(callExpression).Compile();
+                    var value = f.DynamicInvoke();
+                    parameters.Add(key, value);
+                    return key;
+                }
+                else if (expr is UnaryExpression unaryExpression)
+                {
+                    if (unaryExpression.NodeType == ExpressionType.Convert)
+                    {
+                        return ParseExpression(unaryExpression.Operand, parameters, withTableName, exprType);
+                    }
+                }
+                else if (expr is MemberExpression memberExpression)
+                {
+                    string name = string.Empty;
+                    if (
+                        exprType != null
+                        && memberExpression.Member.ReflectedType.IsAssignableFrom(exprType)
+                        && memberExpression.Expression.NodeType == ExpressionType.Parameter
                     )
                     {
-                        if (expr.NodeType == ExpressionType.Equal)
+                        var table = LoadTable(exprType);
+                        if (table != null)
                         {
-                            basecondition.Type = ConditionType.Equal;
+                            var field = table.GetFieldByPropertyName(memberExpression.Member.Name);
+                            if (field != null)
+                            {
+                                name = field?.GetSelectName(withTableName);
+                            }
                         }
-                        if (expr.NodeType == ExpressionType.NotEqual)
+                        else
                         {
+                            var view = LoadView(exprType);
+                            if (view != null)
+                            {
+                                var field = view.GetTableFields().FirstOrDefault(x => x.Property.Name == memberExpression.Member.Name);
+                                if (field != null)
+                                {
+                                    name = field?.GetSelectName(withTableName);
+                                }
+                            }
+                        }
+                    }
+                    if (string.IsNullOrEmpty(name))
+                    {
+                        if (memberExpression.Expression is ConstantExpression constantExpression)
+                        {
+                            Type type = constantExpression.Value.GetType();
+                            var value = type.InvokeMember(memberExpression.Member.Name, BindingFlags.GetField, null, constantExpression.Value, null);
+                            var key = "@Constat" + parameters.Count;
+                            parameters.Add(key, value);
+                            return key;
+                        }
+                        else if (memberExpression.Expression != null)
+                        {
+                            return ParseExpression(memberExpression.Expression, parameters, withTableName); // not resending type here
+                        }
+                        else
+                        {
+                            var key = "@Constat" + parameters.Count;
+                            var f = Expression.Lambda(memberExpression).Compile();
+                            var value = f.DynamicInvoke();
+                            parameters.Add(key, value);
+                            return key;
+                        }
+                    }
+                    else
+                    {
+                        return name;
+                    }
+                }
+                else if (expr is ConstantExpression constantExpression)
+                {
+                    var key = "@Constat" + parameters.Count;
+                    parameters.Add(key, constantExpression.Value);
+                    return key;
+                }
+            }
+            return null;
+        }
+
+        public static IEnumerable<Condition.Condition> ParseConditionExpression(Expression expr, Condition.Condition parent = null, Type exprType = null)
+        {
+            if (expr != null)
+            {
+                if (expr is LambdaExpression lambdaExpression)
+                {
+                    var type = lambdaExpression.Parameters?.FirstOrDefault()?.Type;
+                    return ParseConditionExpression(lambdaExpression.Body, parent, type);
+                }
+                else if (expr is UnaryExpression unaryExpression)
+                {
+                    if (unaryExpression.NodeType == ExpressionType.Convert)
+                    {
+                        return ParseConditionExpression(unaryExpression.Operand, parent, exprType);
+                    }
+                    if (parent != null)
+                    {
+                        return new [] { parent };
+                    }
+                }
+                var basecondition = new Condition.Condition(null, null);
+                if (expr is BinaryExpression binaryExpression)
+                {
+                    switch (expr.NodeType)
+                    {
+                        case ExpressionType.And:
+                        case ExpressionType.AndAlso:
+                            basecondition.IsOr = false;
+                            break;
+                        case ExpressionType.Or:
+                        case ExpressionType.OrElse:
+                            basecondition.IsOr = true;
+                            break;
+                        case ExpressionType.Equal:
+                            basecondition.Type = ConditionType.Equal;
+                            break;
+                        case ExpressionType.NotEqual:
                             basecondition.Type = ConditionType.Equal;
                             basecondition.IsNot = true;
-                        }
-                        if (expr.NodeType == ExpressionType.LessThan)
-                        {
+                            break;
+                        case ExpressionType.LessThan:
                             basecondition.Type = ConditionType.Less;
-                        }
-                        if (expr.NodeType == ExpressionType.LessThanOrEqual)
-                        {
+                            break;
+                        case ExpressionType.LessThanOrEqual:
                             basecondition.Type = ConditionType.LessAndEqual;
-                        }
-                        if (expr.NodeType == ExpressionType.GreaterThan)
-                        {
+                            break;
+                        case ExpressionType.GreaterThan:
                             basecondition.Type = ConditionType.Greather;
-                        }
-                        if (expr.NodeType == ExpressionType.GreaterThanOrEqual)
-                        {
+                            break;
+                        case ExpressionType.GreaterThanOrEqual:
                             basecondition.Type = ConditionType.GreatherAndEqual;
-                        }
-                        ParseExpression(binnary.Left, basecondition);
-                        ParseExpression(binnary.Right, basecondition);
+                            break;
+                    }
+                    var left = ParseConditionExpression(binaryExpression.Left, basecondition, exprType);
+                    var right = ParseConditionExpression(binaryExpression.Right, basecondition, exprType);
+                    if (parent != null)
+                    {
+                        parent.SubConditions = (parent.SubConditions ?? (new Condition.Condition[0])).Union(new[] { basecondition }).AsEnumerable();
+                        return new[] { parent };
+                    }
+                    else
+                    {
                         return new[] { basecondition };
                     }
                 }
-                else if (parent != null)
+                else if (expr is MethodCallExpression methodExpression)
                 {
-                    if (expr.NodeType == ExpressionType.NewArrayBounds)
+                    var condition = parent ?? basecondition;
+                    if (methodExpression.Method.Name == "StartsWith")
                     {
-                        var array = (expr as NewArrayExpression);
+                        condition.Type = ConditionType.StartsWith;
                     }
-                    if (expr.NodeType == ExpressionType.NewArrayInit)
+                    if (methodExpression.Method.Name == "EndsWith")
                     {
-                        var array = (expr as NewArrayExpression);
-                        foreach (var arg in array.Expressions)
-                        {
-                            ParseExpression(arg, parent);
-                        }
+                        condition.Type = ConditionType.EndsWith;
                     }
-                    if (expr.NodeType == ExpressionType.Constant || expr.NodeType == ExpressionType.Convert)
+                    if (methodExpression.Method.Name == "Contains")
                     {
-                        List<object> vals = new List<object>();
-                        var f = Expression.Lambda(expr).Compile();
-                        var value = f.DynamicInvoke();
-                        var valueType = value.GetType();
-                        if (valueType.IsPrimitive || valueType == typeof(string) || valueType == typeof(Guid))
+                        if (methodExpression.Method.DeclaringType.Name == "String")
                         {
-                            vals.Add(value);
-                        }
-                        else if (valueType.IsArray)
-                        {
-                            foreach (var item in (Array)value)
-                            {
-                                vals.Add(item);
-                            }
+                            condition.Type = ConditionType.Like;
                         }
                         else
                         {
-                            var fields = valueType.GetFields();
-                            if (fields.Any())
-                            {
-                                foreach (var field in fields)
-                                {
-                                    vals.Add(field.GetValue(value));
-                                }
-                            }
+                            condition.Type = ConditionType.In;
                         }
-                        if (parent.Values != null)
-                        {
-                            foreach (var o in parent.Values)
-                            {
-                                vals.Add(o);
-                            }
-                        }
-                        parent.Values = vals.ToArray();
                     }
-                    if (expr.NodeType == ExpressionType.MemberAccess)
+                    if (methodExpression.Arguments != null && methodExpression.Arguments.Any())
                     {
-                        var member = (expr as MemberExpression);
-                        if (member.Expression?.NodeType == ExpressionType.Parameter)
+                        foreach (var arg in methodExpression.Arguments)
                         {
-                            var table = LoadTable(member.Member.ReflectedType);
-                            if (table != null)
-                            {
-                                parent.Name = table.Name + ".";
-                            }
-                            else
-                            {
-                                var view = LoadView(member.Member.ReflectedType);
-                                if (view != null)
-                                {
-                                    table = view.Tables.FirstOrDefault(x => x.Fields.Any(y => y.Value.Property.Name == member.Member.Name));
-                                    if (table != null)
-                                    {
-                                        parent.Name = table.Name + ".";
-                                    }
-                                }
-                            }
-
-                            var fields = LoadFields(member.Member.ReflectedType);
-                            var field = fields.FirstOrDefault(x => x.Property.Name == member.Member.Name);
-
-                            parent.Name += field?.Name;
+                            ParseConditionExpression(arg, condition, exprType);
                         }
-                        else if (member.Expression?.NodeType == ExpressionType.MemberAccess)
+                    }
+                    if (methodExpression.Object != null)
+                    {
+                        ParseConditionExpression(methodExpression.Object, condition, exprType);
+                    }
+                    return new[] { condition };
+                }
+                if (parent != null)
+                {
+                    if (expr is ConstantExpression || expr is MethodCallExpression)
+                    {
+                        List<object> vals = InvokeExpression(expr);
+                        if (vals != null && vals.Any())
                         {
-                            var f = Expression.Lambda(expr).Compile();
-                            var value = f.DynamicInvoke();
-                            var valueType = value.GetType();
-                            List<object> vals = new List<object>();
-                            if (valueType.IsPrimitive || valueType == typeof(string) || valueType == typeof(Guid))
-                            {
-                                vals.Add(value);
-                            }
-                            else if (valueType.IsArray)
-                            {
-                                foreach (var item in (Array)value)
-                                {
-                                    vals.Add(item);
-                                }
-                            }
-                            else
-                            {
-                                var fields = valueType.GetFields();
-                                if (fields.Any())
-                                {
-                                    foreach (var field in fields)
-                                    {
-                                        vals.Add(field.GetValue(value));
-                                    }
-                                }
-                            }
-                            if (parent.Values != null)
-                            {
-                                foreach (var o in parent.Values)
-                                {
-                                    vals.Add(o);
-                                }
-                            }
                             parent.Values = vals.ToArray();
                         }
+                    }
+                    else if (expr is NewArrayExpression arrayExpresion)
+                    {
+                        foreach (var arg in arrayExpresion.Expressions)
+                        {
+                            ParseConditionExpression(arg, parent, exprType);
+                        }
+                    }
+                    else if (expr is MemberExpression memberExpression)
+                    {
+                        string name = string.Empty;
+                        if (
+                            exprType != null
+                            && memberExpression.Member.ReflectedType.IsAssignableFrom(exprType)
+                            && memberExpression.Expression.NodeType == ExpressionType.Parameter
+                        )
+                        {
+                            var table = LoadTable(exprType);
+                            if (table != null)
+                            {
+                                var field = table.GetFieldByPropertyName(memberExpression.Member.Name);
+                                if (field != null)
+                                {
+                                    name = field?.GetSelectName(true);
+                                }
+                            }
+                            else
+                            {
+                                var view = LoadView(exprType);
+                                if (view != null)
+                                {
+                                    var field = view.GetTableFields().FirstOrDefault(x => x.Property.Name == memberExpression.Member.Name);
+                                    if (field != null)
+                                    {
+                                        name = field?.GetSelectName(true);
+                                    }
+                                }
+
+                            }
+                        }
+                        if (string.IsNullOrEmpty(name))
+                        {
+                            if (memberExpression.Expression is ConstantExpression constantExpression)
+                            {
+                                Type type = constantExpression.Value.GetType();
+                                var value = type.InvokeMember(memberExpression.Member.Name, BindingFlags.GetField, null, constantExpression.Value, null);
+                                parent.Values = new[] { value };
+                            }
+                            //else if (memberExpression.Expression != null)
+                            //{
+                            //    ParseConditionExpression(memberExpression.Expression, parent); // not resending type here
+                            //}
+                            else
+                            {
+                                List<object> vals = InvokeExpression(expr);
+                                if (vals != null && vals.Any())
+                                {
+                                    parent.Values = vals.ToArray();
+                                }
+                            }
+                        }
                         else
                         {
-                            ParseExpression(member.Expression, parent);
+                            parent.Name = name;
                         }
                     }
-                    //like
-                    //in
-                    //starts with
-                    // ends with
-                }
-                else if (expr.NodeType == ExpressionType.Call)
-                {
-                    var member = (expr as MethodCallExpression);
-                    if (member.Method.Name == "StartsWith")
-                    {
-                        basecondition.Type = ConditionType.StartsWith;
-                    }
-                    if (member.Method.Name == "EndsWith")
-                    {
-                        basecondition.Type = ConditionType.EndsWith;
-                    }
-                    if (member.Method.Name == "Contains")
-                    {
-                        if (member.Method.DeclaringType.Name == "String")
-                        {
-                            basecondition.Type = ConditionType.Like;
-                        }
-                        else
-                        {
-                            basecondition.Type = ConditionType.In;
-                        }
-                    }
-                    if (member.Arguments != null && member.Arguments.Any())
-                    {
-                        foreach (var arg in member.Arguments)
-                        {
-                            ParseExpression(arg, basecondition);
-                        }
-                    }
-                    if (member.Object != null)
-                    {
-                        ParseExpression(member.Object, basecondition);
-                    }
-                    return new[] { basecondition };
                 }
             }
             return new Condition.Condition[0];
+        }
+
+        private static List<object> InvokeExpression(Expression expr)
+        {
+            List<object> vals = new List<object>();
+            object value = null;
+            if (expr is ConstantExpression constantExpression)
+            {
+                value = constantExpression.Value;
+            }
+            else
+            {
+                var f = Expression.Lambda(expr).Compile();
+                value = f.DynamicInvoke();
+            }
+            if (value != null)
+            {
+
+                var valueType = value.GetType();
+                if (valueType.IsPrimitive || valueType == typeof(string) || valueType == typeof(Guid))
+                {
+                    vals.Add(value);
+                }
+                else if (valueType.IsArray)
+                {
+                    foreach (var item in (Array)value)
+                    {
+                        vals.Add(item);
+                    }
+                }
+                else
+                {
+                    var fields = valueType.GetFields();
+                    if (fields.Any())
+                    {
+                        foreach (var field in fields)
+                        {
+                            vals.Add(field.GetValue(value));
+                        }
+                    }
+                }
+            }
+
+            return vals;
         }
     }
 }

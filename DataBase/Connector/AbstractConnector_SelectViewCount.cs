@@ -11,7 +11,7 @@ namespace Birko.Data.DataBase.Connector
     {
         public long SelectCountView(Type type, LambdaExpression expr)
         {
-            return SelectCountView(type, (expr != null) ? DataBase.ParseExpression(expr) : null);
+            return SelectCountView(type, (expr != null) ? DataBase.ParseConditionExpression(expr) : null);
         }
 
         public long SelectCountView(Type type, IEnumerable<Condition.Condition> conditions = null)
@@ -21,7 +21,7 @@ namespace Birko.Data.DataBase.Connector
 
         public long SelectCount(Table.View view, LambdaExpression expr)
         {
-            return SelectCount(view, (expr != null) ? DataBase.ParseExpression(expr) : null);
+            return SelectCount(view, (expr != null) ? DataBase.ParseConditionExpression(expr) : null);
         }
 
         public long SelectCount(Table.View view, IEnumerable<Condition.Condition> conditions = null)

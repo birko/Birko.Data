@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 namespace Birko.Data.DataBase
@@ -31,6 +33,25 @@ namespace Birko.Data.DataBase
             {
                 throw new Exceptions.TableAttributeException("Types enumerable is empty ot null");
             }
+        }
+
+        public static AbstractField GetViewField<T, P>(Expression<Func<T, P>> expr)
+        {
+            var expression = (UnaryExpression)expr.Body;
+            PropertyInfo propInfo = (expression.Operand as MemberExpression).Member as PropertyInfo;
+            object[] fieldAttrs = propInfo.GetCustomAttributes(typeof(Attribute.ViewField), true);
+            if (fieldAttrs != null && fieldAttrs.Any())
+            {
+                foreach (Attribute.ViewField fieldAttr in fieldAttrs)
+                {
+                    var table = LoadTable(fieldAttr.ModelType);
+                    if (table != null)
+                    {
+                        return table.GetFieldByPropertyName(fieldAttr.ModelProperyName);
+                    }
+                }
+            }
+            return null;
         }
 
         public static Table.View LoadView(Type type)
@@ -94,7 +115,7 @@ namespace Birko.Data.DataBase
                                         string name = !string.IsNullOrEmpty(fieldAttr.ModelProperyName) ? fieldAttr.ModelProperyName : field.Name;
                                         if (_fieldsCache.ContainsKey(type) && _fieldsCache[type].Any(x => x.Name == name))
                                         {
-                                            view.AddField(table.Name, _fieldsCache[type].FirstOrDefault(x => x.Name == name));
+                                            view.AddField(table.Name, table.Type, _fieldsCache[type].FirstOrDefault(x => x.Name == name));
                                         }
                                         else
                                         {
@@ -111,7 +132,7 @@ namespace Birko.Data.DataBase
                                                         tableFieldName += functionField.Name;
                                                         tableField = functionField;
                                                     }
-                                                    view.AddField(table.Name, tableField, tableField.Name);
+                                                    view.AddField(table.Name, table.Type, tableField, tableField.Name);
                                                 }
                                                 else
                                                 {
@@ -119,7 +140,7 @@ namespace Birko.Data.DataBase
                                                     foreach (var loadField in loadedFields)
                                                     {
                                                         loadField.Property = field;
-                                                        view.AddField(table.Name, loadField);
+                                                        view.AddField(table.Name, table.Type, loadField);
                                                     }
                                                 }
                                             }

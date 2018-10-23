@@ -10,6 +10,7 @@ namespace Birko.Data.DataBase.Table
     {
         public string Name { get; set; }
         public Dictionary<string, Field.AbstractField> Fields { get; set; }
+        public Type Type { get; set; }
 
         public IDictionary<int, string> GetSelectFields(bool withName  = false, bool notAggregate = false)
         {
@@ -20,13 +21,7 @@ namespace Birko.Data.DataBase.Table
                 var field = Fields[keys[i]];
                 if (!notAggregate || !field.IsAggregate)
                 {
-                    var fieldName = (field.IsAggregate)
-                        ? string.Format("{0}({1}) as {2}",
-                            field.Name,
-                            string.Join(",", (field as Field.FunctionField).Parameters?.Select(x=> string.Format("{0}{1}", (withName ? Name + "." : string.Empty), x)) ?? new string[0]),
-                            keys[i])
-                        : (withName ? Name + "." : string.Empty) + keys[i];
-                    fields.Add(i, fieldName);
+                    fields.Add(i, field.GetSelectName(withName) + (field.IsAggregate? " as " + keys[i] : "") );
                 }
             }
             return fields;

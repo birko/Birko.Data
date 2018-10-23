@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Linq;
 using System.Text;
 
 namespace Birko.Data.DataBase.Field
@@ -16,6 +17,7 @@ namespace Birko.Data.DataBase.Field
         public bool IsAutoincrement { get; set; } = false;
         public bool IsAggregate { get; set; } = false;
         public System.Reflection.PropertyInfo Property { get; set; }
+        public Table.Table Table { get; set; }
 
         public AbstractField(System.Reflection.PropertyInfo property, string name, DbType type = DbType.String, bool primary = false, bool notNull = false, bool unique = false, bool autoincrement = false)
         {
@@ -26,6 +28,15 @@ namespace Birko.Data.DataBase.Field
             IsNotNull = notNull;
             IsAutoincrement = autoincrement;
             Property = property;
+        }
+
+        public string GetSelectName(bool withName = false)
+        {
+            return (IsAggregate)
+                        ? string.Format("{0}({1})",
+                            Name,
+                            string.Join(",", (this as Field.FunctionField).Parameters?.Select(x => string.Format("{0}{1}", (withName ? Table.Name + "." : string.Empty), x)) ?? new string[0]))
+                        : (withName ? Table.Name + "." : string.Empty) + Name;
         }
 
         public virtual object Write(object value)

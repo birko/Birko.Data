@@ -25,22 +25,22 @@ namespace Birko.Data.DataBase.Table
 
         public View AddTable(Table table)
         {
-            return AddTable(table.Name, table.Fields.Values);
+            return AddTable(table.Name, table.Type, table.Fields.Values);
         }
 
-        public View AddTable(string tableName, IEnumerable<Field.AbstractField> fields)
+        public View AddTable(string tableName, Type tableType, IEnumerable<Field.AbstractField> fields)
         {
             if (fields != null && fields.Any())
             {
                 foreach (var field in fields)
                 {
-                    AddField(tableName, field);
+                    AddField(tableName, tableType, field);
                 }
             }
             return this;
         }
 
-        public View AddField(string tableName, AbstractField field, string name = null)
+        public View AddField(string tableName, Type tableType, AbstractField field, string name = null)
         {
             if (!string.IsNullOrEmpty(tableName) && field != null)
             {
@@ -51,7 +51,10 @@ namespace Birko.Data.DataBase.Table
                 }
                 else
                 {
-                    table = new Table() { Name = tableName };
+                    table = new Table() {
+                        Name = tableName,
+                        Type = tableType
+                    };
                     Tables = (Tables == null) ? new[] { table } : Tables.Concat(new[] { table });
                 }
                 if (table.Fields == null)
@@ -61,6 +64,7 @@ namespace Birko.Data.DataBase.Table
                 var fieldName = (!string.IsNullOrEmpty(name)) ? name : field.Name;
                 if (!table.Fields.ContainsKey(fieldName))
                 {
+                    field.Table = table;
                     table.Fields.Add(fieldName, field);
                 }
             }

@@ -90,6 +90,26 @@ namespace Birko.Data.Repository
             return data;
         }
 
+        public TViewModel Update(Guid Id, TViewModel data, ProcessDataDelegate<TModel> processDelegate = null)
+        {
+            if (_store != null)
+            {
+                TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
+                item.LoadFrom(data);
+                _store.Save(item, (x) => {
+                    x = processDelegate?.Invoke(x) ?? x;
+                    if (CheckHashChange(x))
+                    {
+                        return x;
+                    }
+                    return null;
+                });
+                StoreChanges();
+                data.LoadFrom(item);
+            }
+            return data;
+        }
+
         public virtual TViewModel Delete(Guid Id)
         {
             if (_store != null && _store.Count(x => x.Guid == Id) > 0)
@@ -139,26 +159,6 @@ namespace Birko.Data.Repository
                     readAction?.Invoke(result);
                 });
             }
-        }
-
-        public TViewModel Update(Guid Id, TViewModel data, ProcessDataDelegate<TModel> processDelegate = null)
-        {
-            if (_store != null)
-            {
-                TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
-                item.LoadFrom(data);
-                _store.Save(item, (x) => {
-                    x = processDelegate?.Invoke(x) ?? x;
-                    if (CheckHashChange(x))
-                    {
-                        return x;
-                    }
-                    return null;
-                });
-                StoreChanges();
-                data.LoadFrom(item);
-            }
-            return data;
         }
 
         public void StoreChanges()

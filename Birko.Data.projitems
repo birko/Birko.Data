@@ -62,5 +62,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Store\JsonStore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Store\Settings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Store\DataBaseStore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ViewModel\LogViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ViewModel\ModelViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ViewModel\ViewModel.cs" />
   </ItemGroup>
 </Project>

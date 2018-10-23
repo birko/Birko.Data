@@ -180,7 +180,13 @@ namespace Birko.Data.DataBase.Connector
                                 {
                                     result.Append(", ");
                                 }
-                                result.Append("@WHERE" + condition.Name.Replace(".", string.Empty) + i);
+                                if (!condition.IsField)
+                                {
+                                    var value = EscapeValue(item);
+                                    var count = command.Parameters?.Count ?? 0;
+                                    result.Append("@WHERE" + condition.Name.Replace(".", string.Empty) + i + "_" + count);
+                                    AddParameter(command, "@WHERE" + condition.Name.Replace(".", string.Empty) + i + "_" + count, value);
+                                }
                                 i++;
                             }
                             result.Append(")");
@@ -193,28 +199,7 @@ namespace Birko.Data.DataBase.Connector
                                 var first = enumerator.Current;
                                 if (first != null)
                                 {
-                                    result.Append((condition.IsField) ? first : "@WHERE" + condition.Name.Replace(".", string.Empty));
-                                }
-                            }
-                        }
-                        if (!condition.IsField)
-                        {
-                            if (condition.Type == Condition.ConditionType.In)
-                            {
-                                int i = 0;
-                                foreach (var item in condition.Values)
-                                {
-                                    var value  = EscapeValue(item);
-                                    AddParameter(command, "@WHERE" + condition.Name.Replace(".", string.Empty) + i, value);
-                                    i++;
-                                }
-                            }
-                            else if (condition.Values != null)
-                            {
-                                var enumerator = condition.Values.GetEnumerator();
-                                if (enumerator.MoveNext())
-                                {
-                                    var first = enumerator.Current;
+                                    if (!condition.IsField)
                                     {
                                         object value = null;
                                         switch (condition.Type)
@@ -233,7 +218,13 @@ namespace Birko.Data.DataBase.Connector
                                                 break;
                                         }
                                         value = EscapeValue(value);
-                                        AddParameter(command, "@WHERE" + condition.Name.Replace(".", string.Empty), value);
+                                        var count = command.Parameters?.Count ?? 0;
+                                        result.Append("@WHERE" + condition.Name.Replace(".", string.Empty) + "_" + count);
+                                        AddParameter(command, "@WHERE" + condition.Name.Replace(".", string.Empty) + "_" + count, value);
+                                    }
+                                    else
+                                    {
+                                        result.Append(first);
                                     }
                                 }
                             }

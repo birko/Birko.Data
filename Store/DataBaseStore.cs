@@ -89,13 +89,6 @@ namespace Birko.Data.Store
                     data.Guid = Guid.NewGuid();
 
                 }
-                else //update
-                {
-                    if (data is Model.AbstractLogModel)
-                    {
-                        (data as Model.AbstractLogModel).UpdatedAt = DateTime.UtcNow;
-                    }
-                }
                 data = storeDelegate?.Invoke(data) ?? data;
                 if (data != null)
                 {
@@ -112,6 +105,10 @@ namespace Birko.Data.Store
                     }
                     else
                     {
+                        if (data is Model.AbstractLogModel)
+                        {
+                            (data as Model.AbstractLogModel).UpdatedAt = DateTime.UtcNow;
+                        }
                         if (!_updateList.ContainsKey(data.Guid.Value))
                         {
                             _updateList.Add(data.Guid.Value, data);

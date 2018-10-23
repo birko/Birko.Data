@@ -22,24 +22,20 @@ namespace Birko.Data.Repository
 
         public override void Read(Action<TViewModel> readAction)
         {
-            Read(null, readAction);
+            Read(null, readAction, null);
+        }
+
+        public virtual void Read(Action<TViewModel> readAction, IDictionary<Expression<Func<TModel, object>>, bool> orderByExpr = null)
+        {
+            Read(null, readAction, orderByExpr);
         }
 
         public override TViewModel Read(Guid Id)
         {
-            if (_store != null)
-            {
-                TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
-                Read(x => x.Guid == Id, (item) =>
-                {
-                    result = item;
-                });
-                return result;
-            }
-            return default(TViewModel);
+            return ReadOne(x => x.Guid == Id);
         }
 
-        public virtual void Read(Expression<Func<TModel, bool>> expr, Action<TViewModel> readAction)
+        public virtual void Read(Expression<Func<TModel, bool>> expr, Action<TViewModel> readAction, IDictionary<Expression<Func<TModel, object>>, bool> orderByExpr = null)
         {
             if(_store != null && readAction != null)
             {
@@ -53,16 +49,31 @@ namespace Birko.Data.Repository
                         StoreHash((data as TModel));
                         readAction?.Invoke(result);
                     }
-                }, expr);
+                }, expr, orderByExpr);
             }
         }
 
-        public virtual void ReadView<TView>(Action<TView> readAction)
+        public virtual TViewModel ReadOne(Expression<Func<TModel, bool>> expr, IDictionary<Expression<Func<TModel, object>>, bool> orderByExpr = null)
         {
-            ReadView(null, readAction);
+            if (_store != null)
+            {
+                TViewModel result = default(TViewModel);
+                Read(expr, (item) =>
+                {
+                    result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
+                    result = item;
+                }, orderByExpr);
+                return result;
+            }
+            return default(TViewModel);
         }
 
-        public virtual void ReadView<TView>(Expression<Func<TView, bool>> expr, Action<TView> readAction)
+        public virtual void ReadView<TView>(Action<TView> readAction, IDictionary<Expression<Func<TModel, object>>, bool> orderByExpr = null)
+        {
+            ReadView(null, readAction, orderByExpr);
+        }
+
+        public virtual void ReadView<TView>(Expression<Func<TView, bool>> expr, Action<TView> readAction, IDictionary<Expression<Func<TModel, object>>, bool> orderByExpr = null)
         {
             if (_store != null && readAction != null)
             {
@@ -70,7 +81,33 @@ namespace Birko.Data.Repository
                 connector.SelectView(typeof(TView), (data) =>
                 {
                     readAction((TView)data);
-                }, expr);
+                }, expr, orderByExpr);
+            }
+        }
+
+        public virtual void Update(IDictionary<Expression<Func<TModel, object>>, Expression<Func<TModel, object>>> expresions, Expression<Func<TModel, bool>> expr, Action<TViewModel> readAction, Expression<Func<TModel, bool>> readExpr)
+        {
+            if (_store != null)
+            {
+                var connector = (_store as Store.DataBaseStore<TConnector, TModel>).Connector;
+                if (typeof(TModel).IsSubclassOf(typeof(Model.AbstractLogModel)))
+                {
+                    Expression<Func<TModel, object>> updateAtFunc = m => (m as Model.AbstractLogModel).UpdatedAt;
+                    Expression<Func<TModel, object>> updateAtExpr = m => DateTime.UtcNow;
+                    if (!expresions.ContainsKey(updateAtFunc))
+                    {
+                        expresions.Add(updateAtFunc, updateAtExpr);
+                    }
+                }
+
+                connector.Update(typeof(TModel), expresions, expr);
+                if (readAction != null)
+                {
+                    Read(readExpr, (data) =>
+                    {
+                        readAction?.Invoke(data);
+                    });
+                }
             }
         }
 
@@ -92,6 +129,15 @@ namespace Birko.Data.Repository
                 Read(readExpr, (data) => {
                     readAction?.Invoke(data);
                 });
+            }
+        }
+
+        public virtual void Delete(Expression<Func<TModel, bool>> expr)
+        {
+            if (_store != null)
+            {
+                var connector = (_store as Store.DataBaseStore<TConnector, TModel>).Connector;
+                connector.Delete(typeof(TModel), expr);
             }
         }
     }

@@ -16,7 +16,7 @@ namespace Birko.Data.DataBase.Connector
 
         public long SelectCount(IEnumerable<Type> types, LambdaExpression expr)
         {
-            return SelectCount(types, (expr != null) ? DataBase.ParseExpression(expr) : null);
+            return SelectCount(types, (expr != null) ? DataBase.ParseConditionExpression(expr) : null);
         }
 
         public long SelectCount(Type type, IEnumerable<Condition.Condition> conditions = null)
@@ -36,7 +36,7 @@ namespace Birko.Data.DataBase.Connector
 
         public long SelectCount(IEnumerable<Table.Table> tables, LambdaExpression expr)
         {
-            return SelectCount(tables, (expr != null) ? DataBase.ParseExpression(expr) : null);
+            return SelectCount(tables, (expr != null) ? DataBase.ParseConditionExpression(expr) : null);
         }
 
         public long SelectCount(Table.Table table, IEnumerable<Condition.Condition> conditions = null)

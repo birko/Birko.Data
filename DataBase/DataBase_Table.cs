@@ -50,10 +50,15 @@ namespace Birko.Data.DataBase
                         Table.Table table = new Table.Table()
                         {
                             Name = attr.Name,
+                            Type = type,
                             Fields = LoadFields(type).ToDictionary(x => x.Name),
                         };
                         if (table.Fields != null && table.Fields.Any())
                         {
+                            foreach (var field in table.Fields)
+                            {
+                                field.Value.Table = table;
+                            }
                             _tableCache.Add(type, table);
                             return table;
                         }

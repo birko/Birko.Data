@@ -10,7 +10,7 @@ namespace Birko.Data.DataBase.Connector
     {
         public void Delete(Type type, LambdaExpression expr)
         {
-            Delete(type, DataBase.ParseExpression(expr));
+            Delete(type, DataBase.ParseConditionExpression(expr));
         }
 
         public void Delete(Type type, IEnumerable<Condition.Condition> conditions = null)
@@ -20,7 +20,7 @@ namespace Birko.Data.DataBase.Connector
 
         public void Delete(Table.Table table, LambdaExpression expr)
         {
-            Delete(table, DataBase.ParseExpression(expr));
+            Delete(table, DataBase.ParseConditionExpression(expr));
         }
 
         public void Delete(Table.Table table, IEnumerable<Condition.Condition> conditions = null)
@@ -31,7 +31,7 @@ namespace Birko.Data.DataBase.Connector
 
         public void Delete(string tableName, LambdaExpression expr)
         {
-            Delete(tableName, DataBase.ParseExpression(expr));
+            Delete(tableName, DataBase.ParseConditionExpression(expr));
         }
 
         private void Delete(string tableName, IEnumerable<Condition.Condition> conditions = null)

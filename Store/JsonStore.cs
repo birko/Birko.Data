@@ -1,5 +1,4 @@
-﻿using CashRegister.Core.ViewModel;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -49,10 +48,10 @@ namespace Birko.Data.Store
         {
             if(_items != null && _items.Any() && action != null)
             {
-                var items = _items.AsEnumerable<T>();
+                var items = _items.ToArray<T>();
                 if (filter != null)
                 {
-                    items = items.Where(filter.Compile());
+                    items = items.Where(filter.Compile()).ToArray();
                 }
                 foreach (T item in items)
                 {
@@ -81,13 +80,6 @@ namespace Birko.Data.Store
                 {
                     data.Guid = Guid.NewGuid();
                 }
-                else //update
-                {
-                    if (data is Model.AbstractLogModel)
-                    {
-                        (data as Model.AbstractLogModel).UpdatedAt = DateTime.UtcNow;
-                    }
-                }
                 data = storeDelegate?.Invoke(data) ?? data;
                 if (data != null)
                 {
@@ -97,12 +89,13 @@ namespace Birko.Data.Store
                     }
                     else //update
                     {
-                        var item = _items.FirstOrDefault(x => x.Guid == data.Guid);
-                        if (item is Model.AbstractLogModel)
+                        if (data is Model.AbstractLogModel)
                         {
-                            (item as Model.AbstractLogModel).UpdatedAt = DateTime.UtcNow;
+                            (data as Model.AbstractLogModel).UpdatedAt = DateTime.UtcNow;
                         }
-                        data.CopyTo(item);
+                        var item = _items.FirstOrDefault(x => x.Guid == data.Guid);
+                        System.Reflection.MethodInfo method = typeof(T).GetMethod("CopyTo", new[] { typeof(T) });
+                        method.Invoke(data, new[] { item });
                     }
                 }
             }

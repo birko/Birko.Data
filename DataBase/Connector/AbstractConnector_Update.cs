@@ -10,7 +10,7 @@ namespace Birko.Data.DataBase.Connector
     {
         public void Update(object model, LambdaExpression expr)
         {
-            Update(model, DataBase.ParseExpression(expr));
+            Update(model, DataBase.ParseConditionExpression(expr));
         }
 
         public void Update(object model, IEnumerable<Condition.Condition> conditions = null)
@@ -23,7 +23,7 @@ namespace Birko.Data.DataBase.Connector
 
         public void Update(Type type, object model, LambdaExpression expr)
         {
-            Update(DataBase.LoadTable(type), model, DataBase.ParseExpression(expr));
+            Update(DataBase.LoadTable(type), model, DataBase.ParseConditionExpression(expr));
         }
 
         public void Update(Type type, object model, IEnumerable<Condition.Condition> conditions = null)
@@ -33,7 +33,7 @@ namespace Birko.Data.DataBase.Connector
 
         public void Update(Table.Table table, object model, LambdaExpression expr)
         {
-            Update(table, model, DataBase.ParseExpression(expr));
+            Update(table, model, DataBase.ParseConditionExpression(expr));
         }
 
         public void Update(Table.Table table, object model, IEnumerable<Condition.Condition> conditions = null)
@@ -46,7 +46,12 @@ namespace Birko.Data.DataBase.Connector
 
         public void Update<T, P>(Type type, IDictionary<Expression<Func<T, P>>, object> expresions, LambdaExpression expr)
         {
-            Update(type, expresions, DataBase.ParseExpression(expr));
+            Update(type, expresions, DataBase.ParseConditionExpression(expr));
+        }
+
+        public void Update<T, P>(Type type, IDictionary<Expression<Func<T, P>>, Expression<Func<T, P>>> expresions, LambdaExpression expr)
+        {
+            Update(type, expresions, DataBase.ParseConditionExpression(expr));
         }
 
         public void Update<T,P>(Type type, IDictionary<Expression<Func<T, P>>, object> expresions, IEnumerable<Condition.Condition> conditions = null)
@@ -55,9 +60,20 @@ namespace Birko.Data.DataBase.Connector
             Update(table, expresions, conditions);
         }
 
+        public void Update<T, P>(Type type, IDictionary<Expression<Func<T, P>>, Expression<Func<T, P>>> expresions, IEnumerable<Condition.Condition> conditions = null)
+        {
+            var table = DataBase.LoadTable(type);
+            Update(table, expresions, conditions);
+        }
+
         public void Update<T, P>(Table.Table table, IDictionary<Expression<Func<T, P>>, object> expresions, Expression expr)
         {
-                Update(table, expresions, DataBase.ParseExpression(expr));
+            Update(table, expresions, DataBase.ParseConditionExpression(expr));
+        }
+
+        public void Update<T, P>(Table.Table table, IDictionary<Expression<Func<T, P>>, Expression<Func<T, P>>> expresions, Expression expr)
+        {
+            Update(table, expresions, DataBase.ParseConditionExpression(expr));
         }
 
         public void Update<T, P>(Table.Table table, IDictionary<Expression<Func<T, P>>, object> expresions, IEnumerable<Condition.Condition> conditions = null)
@@ -66,6 +82,29 @@ namespace Birko.Data.DataBase.Connector
             {
                 Update(table.Name, expresions, conditions);
             }
+        }
+
+        public void Update<T, P>(Table.Table table, IDictionary<Expression<Func<T, P>>, Expression<Func<T, P>>> expresions, IEnumerable<Condition.Condition> conditions = null)
+        {
+            if (table != null)
+            {
+                Update(table.Name, expresions, conditions);
+            }
+        }
+
+        public void Update<T, P>(string tableName, IDictionary<Expression<Func<T, P>>, Expression<Func<T, P>>> expresions, IEnumerable<Condition.Condition> conditions = null)
+        {
+            var fields = new Dictionary<int, string>();
+            var values = new Dictionary<string, object>();
+            int i = 0;
+            foreach (var kvp in expresions)
+            {
+                var field = DataBase.GetField(kvp.Key);
+                var fieldExpr = DataBase.ParseExpression(kvp.Value, values);
+                fields.Add(i, field.Name + " = " + fieldExpr);
+                i++;
+            }
+            Update(tableName, fields, values, conditions, true);
         }
 
         public void Update<T, P>(string tableName, IDictionary<Expression<Func<T, P>>, object> expresions, IEnumerable<Condition.Condition> conditions = null)
@@ -90,7 +129,7 @@ namespace Birko.Data.DataBase.Connector
             Update(tableName, fields, values, conditions);
         }
 
-        public void Update(string tableName, IDictionary<int, string> fields, IDictionary<string, object> values, IEnumerable<Condition.Condition> conditions = null)
+        public void Update(string tableName, IDictionary<int, string> fields, IDictionary<string, object> values, IEnumerable<Condition.Condition> conditions = null, bool isExpressionValues = false)
         {
             if (values != null && values.Any())
             {
@@ -102,11 +141,27 @@ namespace Birko.Data.DataBase.Connector
                     {
                         using (var command = db.CreateCommand())
                         {
-                            command.CommandText = "UPDATE " + tableName + " SET " + string.Join(", ", fields.Values.Select(x => x + "= @SET" + x.Replace(".", string.Empty)));
+                            command.CommandText = "UPDATE " + tableName + " SET ";
+                            if (!isExpressionValues)
+                            {
+                                command.CommandText += string.Join(", ", fields.Values.Select(x => x + "= @SET" + x.Replace(".", string.Empty)));
+                            }
+                            else
+                            {
+                                command.CommandText += string.Join(", ", fields.Values.Select(x => x));
+                            }
+
                             AddWhere(conditions, command);
                             foreach (var kvp in values)
                             {
-                                AddParameter(command, "@SET" + kvp.Key.Replace(".", string.Empty), kvp.Value);
+                                if (!isExpressionValues)
+                                {
+                                    AddParameter(command, "@SET" + kvp.Key.Replace(".", string.Empty), kvp.Value);
+                                }
+                                else
+                                {
+                                    AddParameter(command, kvp.Key, kvp.Value);
+                                }
                             }
                             command.ExecuteNonQuery();
                         }
