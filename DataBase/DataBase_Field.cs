@@ -56,8 +56,16 @@ namespace Birko.Data.DataBase
 
         public static AbstractField GetField<T, P>(Expression<Func<T, P>> expr)
         {
-            var expression = (UnaryExpression)expr.Body;
-            PropertyInfo propInfo = (expression.Operand as MemberExpression).Member as PropertyInfo;
+            PropertyInfo propInfo = null;
+            if (expr.Body is UnaryExpression expression)
+            {
+                propInfo = (expression.Operand as MemberExpression).Member as PropertyInfo;
+
+            }
+            else if(expr.Body is  MemberExpression memberExpression)
+            {
+                propInfo = memberExpression.Member as PropertyInfo;
+            }
             var fields = LoadField(propInfo);
             return fields.First();
         }

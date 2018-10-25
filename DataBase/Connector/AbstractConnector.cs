@@ -9,7 +9,7 @@ using System.Text;
 namespace Birko.Data.DataBase.Connector
 {
     public delegate void InitConnector(AbstractConnector connector);
-    public delegate void OnException(Exception ex);
+    public delegate void OnException(Exception ex, string commandText);
 
     public abstract partial class AbstractConnector
     {
@@ -30,11 +30,11 @@ namespace Birko.Data.DataBase.Connector
 
         public abstract string FieldDefinition(Field.AbstractField field);
 
-        public virtual void InitException(Exception ex)
+        public virtual void InitException(Exception ex, string commandText)
         {
             if (OnException != null)
             {
-                OnException?.Invoke(ex);
+                OnException?.Invoke(ex, commandText);
             }
             else
             {

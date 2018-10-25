@@ -47,6 +47,7 @@ namespace Birko.Data.DataBase.Connector
                     db.Open();
                     using (var transaction = db.BeginTransaction())
                     {
+                        string commandText = null;
                         try
                         {
                             foreach (var kvp in tables.Where(x => x.Value != null && x.Value.Any()))
@@ -58,6 +59,7 @@ namespace Birko.Data.DataBase.Connector
                                         + " ("
                                         + string.Join(", ", kvp.Value.Select(x => FieldDefinition(x)).Where(x => !string.IsNullOrEmpty(x)))
                                         + ")";
+                                    commandText = DataBase.GetGeneratedQuery(command);
                                     command.ExecuteNonQuery();
                                 }
                             }
@@ -66,7 +68,7 @@ namespace Birko.Data.DataBase.Connector
                         catch (Exception ex)
                         {
                             transaction.Rollback();
-                            InitException(ex);
+                            InitException(ex, commandText);
                         }
                     }
                 }

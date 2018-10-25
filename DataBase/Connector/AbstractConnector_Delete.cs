@@ -40,12 +40,14 @@ namespace Birko.Data.DataBase.Connector
             {
                 db.Open();
                 var transaction = db.BeginTransaction();
+                string commandText = null;
                 try
                 {
                     using (var command = db.CreateCommand())
                     {
                         command.CommandText = "DELETE FROM " + tableName;
                         AddWhere(conditions, command);
+                        commandText = DataBase.GetGeneratedQuery(command);
                         command.ExecuteNonQuery();
                     }
                     transaction.Commit();
@@ -53,7 +55,7 @@ namespace Birko.Data.DataBase.Connector
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    InitException(ex);
+                    InitException(ex, commandText);
                 }
             }
         }

@@ -137,6 +137,7 @@ namespace Birko.Data.DataBase.Connector
                 {
                     db.Open();
                     var transaction = db.BeginTransaction();
+                    string commandText = null;
                     try
                     {
                         using (var command = db.CreateCommand())
@@ -163,6 +164,7 @@ namespace Birko.Data.DataBase.Connector
                                     AddParameter(command, kvp.Key, kvp.Value);
                                 }
                             }
+                            commandText = DataBase.GetGeneratedQuery(command);
                             command.ExecuteNonQuery();
                         }
                         transaction.Commit();
@@ -170,7 +172,7 @@ namespace Birko.Data.DataBase.Connector
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        InitException(ex);
+                        InitException(ex, commandText);
                     }
                 }
             }

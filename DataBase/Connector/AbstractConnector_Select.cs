@@ -193,10 +193,12 @@ namespace Birko.Data.DataBase.Connector
                 using (var db = CreateConnection(_settings))
                 {
                     db.Open();
+                    string commandText = null;
                     try
                     {
                         using (var command = CreateSelectCommand(db, tableNames.Where(x => !string.IsNullOrEmpty(x)).Distinct(), fields, conditions, orderFields))
                         {
+                            commandText = DataBase.GetGeneratedQuery(command);
                             var reader = command.ExecuteReader();
                             if (reader.HasRows)
                             {
@@ -211,7 +213,7 @@ namespace Birko.Data.DataBase.Connector
                     }
                     catch (Exception ex)
                     {
-                        InitException(ex);
+                        InitException(ex, commandText);
                     }
                 }
             }

@@ -40,6 +40,7 @@ namespace Birko.Data.DataBase.Connector
                     db.Open();
                     using (var transaction = db.BeginTransaction())
                     {
+                        string commandText = null;
                         try
                         {
                             foreach (var tableName in tables.Where(x => !string.IsNullOrEmpty(x)))
@@ -47,6 +48,7 @@ namespace Birko.Data.DataBase.Connector
                                 using (var command = db.CreateCommand())
                                 {
                                     command.CommandText = "DROP TABLE IF EXISTS " + tableName;
+                                    commandText = DataBase.GetGeneratedQuery(command);
                                     command.ExecuteNonQuery();
                                 }
                             }
@@ -55,7 +57,7 @@ namespace Birko.Data.DataBase.Connector
                         catch (Exception ex)
                         {
                             transaction.Rollback();
-                            InitException(ex);
+                            InitException(ex, commandText);
                         }
                     }
                 }

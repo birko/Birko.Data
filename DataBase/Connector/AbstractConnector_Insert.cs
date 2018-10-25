@@ -64,6 +64,7 @@ namespace Birko.Data.DataBase.Connector
                     db.Open();
                     using (var transaction = db.BeginTransaction())
                     {
+                        string commandText = null;
                         try
                         {
                             using (var command = db.CreateCommand())
@@ -82,6 +83,7 @@ namespace Birko.Data.DataBase.Connector
                                     {
                                         AddParameter(command, "@" + kvp.Key.Replace(".", string.Empty), kvp.Value);
                                     }
+                                    commandText = DataBase.GetGeneratedQuery(command);
                                     command.ExecuteNonQuery();
                                 }
                             }
@@ -90,7 +92,7 @@ namespace Birko.Data.DataBase.Connector
                         catch (Exception ex)
                         {
                             transaction.Rollback();
-                            InitException(ex);
+                            InitException(ex, commandText);
                         }
                     }
                 }

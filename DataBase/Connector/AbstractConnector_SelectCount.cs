@@ -67,6 +67,7 @@ namespace Birko.Data.DataBase.Connector
                 using (var db = CreateConnection(_settings))
                 {
                     db.Open();
+                    string commandText = null;
                     try
                     {
                         var fields = new Dictionary<int, string>()
@@ -75,13 +76,14 @@ namespace Birko.Data.DataBase.Connector
                         };
                         using (var command = CreateSelectCommand(db, tableNames.Where(x => !string.IsNullOrEmpty(x)).Distinct(), fields, joinconditions, conditions))
                         {
+                            commandText = DataBase.GetGeneratedQuery(command);
                             var data = command.ExecuteScalar();
                             count = (long)command.ExecuteScalar();
                         }
                     }
                     catch (Exception ex)
                     {
-                        InitException(ex);
+                        InitException(ex, commandText);
                     }
                 }
             }
