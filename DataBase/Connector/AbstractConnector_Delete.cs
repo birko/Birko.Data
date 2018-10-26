@@ -36,28 +36,12 @@ namespace Birko.Data.DataBase.Connector
 
         private void Delete(string tableName, IEnumerable<Condition.Condition> conditions = null)
         {
-            using (var db = CreateConnection(_settings))
-            {
-                db.Open();
-                var transaction = db.BeginTransaction();
-                string commandText = null;
-                try
-                {
-                    using (var command = db.CreateCommand())
-                    {
-                        command.CommandText = "DELETE FROM " + tableName;
-                        AddWhere(conditions, command);
-                        commandText = DataBase.GetGeneratedQuery(command);
-                        command.ExecuteNonQuery();
-                    }
-                    transaction.Commit();
-                }
-                catch (Exception ex)
-                {
-                    transaction.Rollback();
-                    InitException(ex, commandText);
-                }
-            }
+            DoCommand((command) => {
+                command.CommandText = "DELETE FROM " + tableName;
+                AddWhere(conditions, command);
+            }, (command) => {
+                command.ExecuteNonQuery();
+            });
         }
     }
 }

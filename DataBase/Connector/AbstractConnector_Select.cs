@@ -9,12 +9,12 @@ namespace Birko.Data.DataBase.Connector
 {
     public abstract partial class AbstractConnector
     {
-        public virtual DbCommand CreateSelectCommand(DbConnection db, IEnumerable<string> tableNames, IDictionary<int, string> fields, IEnumerable<Condition.Condition> conditions = null, IDictionary<string, bool> orderFields = null)
+        public virtual DbCommand CreateSelectCommand(DbCommand command, IEnumerable<string> tableNames, IDictionary<int, string> fields, IEnumerable<Condition.Condition> conditions = null, IDictionary<string, bool> orderFields = null)
         {
-            return CreateSelectCommand(db, tableNames, fields, null, conditions, null, orderFields);
+            return CreateSelectCommand(command, tableNames, fields, null, conditions, null, orderFields);
         }
 
-        public virtual DbCommand CreateSelectCommand(DbConnection db, Table.View view, IEnumerable<Condition.Condition> conditions = null, IDictionary<string, bool> orderFields = null)
+        public virtual DbCommand CreateSelectCommand(DbCommand command, Table.View view, IEnumerable<Condition.Condition> conditions = null, IDictionary<string, bool> orderFields = null)
         {
             var leftTables = view.Join?.Select(x => x.Left).Distinct().Where(x => !string.IsNullOrEmpty(x)).ToList();
             if (leftTables != null)
@@ -24,13 +24,12 @@ namespace Birko.Data.DataBase.Connector
                     leftTables.Remove(tableName);
                 }
             }
-            return CreateSelectCommand(db, leftTables ?? view.Tables.Select(x => x.Name), view.GetSelectFields(), view.Join, conditions, view.HasAggregateFields() ? view.GetSelectFields(true) : null, orderFields);
+            return CreateSelectCommand(command, leftTables ?? view.Tables.Select(x => x.Name), view.GetSelectFields(), view.Join, conditions, view.HasAggregateFields() ? view.GetSelectFields(true) : null, orderFields);
         }
 
 
-        public virtual DbCommand CreateSelectCommand(DbConnection db, IEnumerable<string> tableNames, IDictionary<int, string> fields, IEnumerable<Condition.Join> joinconditions = null, IEnumerable<Condition.Condition> conditions = null, IDictionary<int, string> groupFields = null, IDictionary<string, bool> orderFields = null)
+        public virtual DbCommand CreateSelectCommand(DbCommand command, IEnumerable<string> tableNames, IDictionary<int, string> fields, IEnumerable<Condition.Join> joinconditions = null, IEnumerable<Condition.Condition> conditions = null, IDictionary<int, string> groupFields = null, IDictionary<string, bool> orderFields = null)
         {
-            var command = db.CreateCommand();
             command.CommandText = "SELECT " + string.Join(", ", fields.Values) + " FROM ";
 
             Dictionary<string, List<Condition.Join>> joins = new Dictionary<string, List<Condition.Join>>();
@@ -190,32 +189,20 @@ namespace Birko.Data.DataBase.Connector
         {
             if(tableNames != null && tableNames.Any() && tableNames.Any(x=>!string.IsNullOrEmpty(x)))
             {
-                using (var db = CreateConnection(_settings))
-                {
-                    db.Open();
-                    string commandText = null;
-                    try
+                DoCommand((command) => {
+                    command = CreateSelectCommand(command, tableNames.Where(x => !string.IsNullOrEmpty(x)).Distinct(), fields, conditions, orderFields);
+                }, (command) => {
+                    var reader = command.ExecuteReader();
+                    if (reader.HasRows)
                     {
-                        using (var command = CreateSelectCommand(db, tableNames.Where(x => !string.IsNullOrEmpty(x)).Distinct(), fields, conditions, orderFields))
+                        bool isNext = reader.Read();
+                        while (isNext)
                         {
-                            commandText = DataBase.GetGeneratedQuery(command);
-                            var reader = command.ExecuteReader();
-                            if (reader.HasRows)
-                            {
-                                bool isNext = reader.Read();
-                                while (isNext)
-                                {
-                                    readAction?.Invoke(fields, reader);
-                                    isNext = reader.Read();
-                                }
-                            }
+                            readAction?.Invoke(fields, reader);
+                            isNext = reader.Read();
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        InitException(ex, commandText);
-                    }
-                }
+                });
             }
         }
     }

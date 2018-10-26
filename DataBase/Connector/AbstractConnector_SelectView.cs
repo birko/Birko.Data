@@ -45,32 +45,22 @@ namespace Birko.Data.DataBase.Connector
         {
             if (view != null)
             {
-                using (var db = CreateConnection(_settings))
+                DoCommand((command) => {
+                    command = CreateSelectCommand(command, view, conditions, orderFields);
+                }, (command) =>
                 {
-                    db.Open();
-                    string commandText = null;
-                    try
+                    var reader = command.ExecuteReader();
+                    if (reader.HasRows)
                     {
-                        using (var command = CreateSelectCommand(db, view, conditions, orderFields))
+
+                        bool isNext = reader.Read();
+                        while (isNext)
                         {
-                            commandText = DataBase.GetGeneratedQuery(command);
-                            var reader = command.ExecuteReader();
-                            if (reader.HasRows)
-                            {
-                                bool isNext = reader.Read();
-                                while (isNext)
-                                {
-                                    readAction?.Invoke(view.GetSelectFields(), reader);
-                                    isNext = reader.Read();
-                                }
-                            }
+                            readAction?.Invoke(view.GetSelectFields(), reader);
+                            isNext = reader.Read();
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        InitException(ex, commandText);
-                    }
-                }
+                });
             }
         }
     }

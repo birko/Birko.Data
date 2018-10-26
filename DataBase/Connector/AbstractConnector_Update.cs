@@ -133,48 +133,32 @@ namespace Birko.Data.DataBase.Connector
         {
             if (values != null && values.Any())
             {
-                using (var db = CreateConnection(_settings))
-                {
-                    db.Open();
-                    var transaction = db.BeginTransaction();
-                    string commandText = null;
-                    try
+                DoCommand((command) => {
+                    command.CommandText = "UPDATE " + tableName + " SET ";
+                    if (!isExpressionValues)
                     {
-                        using (var command = db.CreateCommand())
-                        {
-                            command.CommandText = "UPDATE " + tableName + " SET ";
-                            if (!isExpressionValues)
-                            {
-                                command.CommandText += string.Join(", ", fields.Values.Select(x => x + "= @SET" + x.Replace(".", string.Empty)));
-                            }
-                            else
-                            {
-                                command.CommandText += string.Join(", ", fields.Values.Select(x => x));
-                            }
+                        command.CommandText += string.Join(", ", fields.Values.Select(x => x + "= @SET" + x.Replace(".", string.Empty)));
+                    }
+                    else
+                    {
+                        command.CommandText += string.Join(", ", fields.Values.Select(x => x));
+                    }
 
-                            AddWhere(conditions, command);
-                            foreach (var kvp in values)
-                            {
-                                if (!isExpressionValues)
-                                {
-                                    AddParameter(command, "@SET" + kvp.Key.Replace(".", string.Empty), kvp.Value);
-                                }
-                                else
-                                {
-                                    AddParameter(command, kvp.Key, kvp.Value);
-                                }
-                            }
-                            commandText = DataBase.GetGeneratedQuery(command);
-                            command.ExecuteNonQuery();
-                        }
-                        transaction.Commit();
-                    }
-                    catch (Exception ex)
+                    AddWhere(conditions, command);
+                    foreach (var kvp in values)
                     {
-                        transaction.Rollback();
-                        InitException(ex, commandText);
+                        if (!isExpressionValues)
+                        {
+                            AddParameter(command, "@SET" + kvp.Key.Replace(".", string.Empty), kvp.Value);
+                        }
+                        else
+                        {
+                            AddParameter(command, kvp.Key, kvp.Value);
+                        }
                     }
-                }
+                }, (command) => {
+                    command.ExecuteNonQuery();
+                });
             }
         }
     }

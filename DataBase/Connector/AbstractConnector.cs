@@ -270,5 +270,35 @@ namespace Birko.Data.DataBase.Connector
             }
             return command;
         }
+
+        public virtual void DoCommand(Action<DbCommand> createCommand, Action<DbCommand> executeCommand)
+        {
+            lock (_settings)
+            {
+                using (var db = CreateConnection(_settings))
+                {
+                    db.Open();
+                    using (var transaction = db.BeginTransaction())
+                    {
+                        string commandText = null;
+                        try
+                        {
+                            using (var command = db.CreateCommand())
+                            {
+                                createCommand?.Invoke(command);
+                                commandText = DataBase.GetGeneratedQuery(command);
+                                executeCommand?.Invoke(command);
+                            }
+                            transaction.Commit();
+                        }
+                        catch (Exception ex)
+                        {
+                            transaction.Rollback();
+                            InitException(ex, commandText);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -21,6 +21,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Attribute\View.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Condition\Condition.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Condition\Join.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Alter_Drop.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Alter_Add.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Create.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Delete.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DataBase\Connector\AbstractConnector_Drop.cs" />

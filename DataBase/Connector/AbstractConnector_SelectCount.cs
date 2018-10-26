@@ -64,28 +64,20 @@ namespace Birko.Data.DataBase.Connector
             long count = 0;
             if (tableNames != null && tableNames.Any() && tableNames.Any(x => !string.IsNullOrEmpty(x)))
             {
-                using (var db = CreateConnection(_settings))
-                {
-                    db.Open();
-                    string commandText = null;
-                    try
-                    {
-                        var fields = new Dictionary<int, string>()
+                DoCommand((command) => {
+                    command = CreateSelectCommand(
+                        command,
+                        tableNames.Where(x => !string.IsNullOrEmpty(x)).Distinct(),
+                        new Dictionary<int, string>()
                         {
                             { 0, "count(*) as count"}
-                        };
-                        using (var command = CreateSelectCommand(db, tableNames.Where(x => !string.IsNullOrEmpty(x)).Distinct(), fields, joinconditions, conditions))
-                        {
-                            commandText = DataBase.GetGeneratedQuery(command);
-                            var data = command.ExecuteScalar();
-                            count = (long)command.ExecuteScalar();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        InitException(ex, commandText);
-                    }
-                }
+                        },
+                        joinconditions, conditions);
+                }, (command) =>
+                {
+                    var data = command.ExecuteScalar();
+                    count = (long)command.ExecuteScalar();
+                });
             }
             return count;
         }

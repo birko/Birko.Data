@@ -59,43 +59,27 @@ namespace Birko.Data.DataBase.Connector
             if (values != null && values.Any() && values.All(x => x.Any()))
             {
                 var first = values.First();
-                using (var db = CreateConnection(_settings))
+                DoCommand((command) =>
                 {
-                    db.Open();
-                    using (var transaction = db.BeginTransaction())
+                    command.CommandText = "INSERT INTO " + tableName
+                                + " (" + string.Join(", ", first.Keys) + ")"
+                                + " VALUES"
+                                + " (" + string.Join(", ", first.Keys.Select(x => "@" + x.Replace(".", string.Empty))) + ")";
+                    foreach (var kvp in first)
                     {
-                        string commandText = null;
-                        try
-                        {
-                            using (var command = db.CreateCommand())
-                            {
-                                command.CommandText = "INSERT INTO " + tableName
-                                    + " (" + string.Join(", ", first.Keys) + ")"
-                                    + " VALUES"
-                                    + " (" + string.Join(", ", first.Keys.Select(x => "@" + x.Replace(".", string.Empty))) + ")";
-                                foreach (var kvp in first)
-                                {
-                                    AddParameter(command, "@" + kvp.Key.Replace(".", string.Empty), kvp.Value);
-                                }
-                                foreach (var item in values)
-                                {
-                                    foreach (var kvp in item)
-                                    {
-                                        AddParameter(command, "@" + kvp.Key.Replace(".", string.Empty), kvp.Value);
-                                    }
-                                    commandText = DataBase.GetGeneratedQuery(command);
-                                    command.ExecuteNonQuery();
-                                }
-                            }
-                            transaction.Commit();
-                        }
-                        catch (Exception ex)
-                        {
-                            transaction.Rollback();
-                            InitException(ex, commandText);
-                        }
+                        AddParameter(command, "@" + kvp.Key.Replace(".", string.Empty), kvp.Value);
                     }
-                }
+                }, (command) =>
+                {
+                    foreach (var item in values)
+                    {
+                        foreach (var kvp in item)
+                        {
+                            AddParameter(command, "@" + kvp.Key.Replace(".", string.Empty), kvp.Value);
+                        }
+                        command.ExecuteNonQuery();
+                    }
+                });
             }
         }
     }

@@ -35,31 +35,13 @@ namespace Birko.Data.DataBase.Connector
         {
             if (tables != null && tables.Any() && tables.Any(x => !string.IsNullOrEmpty(x)))
             {
-                using (var db = CreateConnection(_settings))
+                foreach (var tableName in tables.Where(x => !string.IsNullOrEmpty(x)))
                 {
-                    db.Open();
-                    using (var transaction = db.BeginTransaction())
-                    {
-                        string commandText = null;
-                        try
-                        {
-                            foreach (var tableName in tables.Where(x => !string.IsNullOrEmpty(x)))
-                            {
-                                using (var command = db.CreateCommand())
-                                {
-                                    command.CommandText = "DROP TABLE IF EXISTS " + tableName;
-                                    commandText = DataBase.GetGeneratedQuery(command);
-                                    command.ExecuteNonQuery();
-                                }
-                            }
-                            transaction.Commit();
-                        }
-                        catch (Exception ex)
-                        {
-                            transaction.Rollback();
-                            InitException(ex, commandText);
-                        }
-                    }
+                    DoCommand((command) => {
+                        command.CommandText = "DROP TABLE IF EXISTS " + tableName;
+                    }, (command) => {
+                        command.ExecuteNonQuery();
+                    });
                 }
             }
         }

@@ -42,35 +42,17 @@ namespace Birko.Data.DataBase.Connector
         {
             if (tables != null && tables.Any() && tables.Any(x => x.Value != null && x.Value.Count() > 0))
             {
-                using (var db = CreateConnection(_settings))
+                foreach (var kvp in tables.Where(x => x.Value != null && x.Value.Any()))
                 {
-                    db.Open();
-                    using (var transaction = db.BeginTransaction())
-                    {
-                        string commandText = null;
-                        try
-                        {
-                            foreach (var kvp in tables.Where(x => x.Value != null && x.Value.Any()))
-                            {
-                                using (var command = db.CreateCommand())
-                                {
-                                    command.CommandText = "CREATE TABLE IF NOT EXISTS "
-                                        + kvp.Key
-                                        + " ("
-                                        + string.Join(", ", kvp.Value.Select(x => FieldDefinition(x)).Where(x => !string.IsNullOrEmpty(x)))
-                                        + ")";
-                                    commandText = DataBase.GetGeneratedQuery(command);
-                                    command.ExecuteNonQuery();
-                                }
-                            }
-                            transaction.Commit();
-                        }
-                        catch (Exception ex)
-                        {
-                            transaction.Rollback();
-                            InitException(ex, commandText);
-                        }
-                    }
+                    DoCommand((command) => {
+                        command.CommandText = "CREATE TABLE IF NOT EXISTS "
+                            + kvp.Key
+                            + " ("
+                            + string.Join(", ", kvp.Value.Select(x => FieldDefinition(x)).Where(x => !string.IsNullOrEmpty(x)))
+                            + ")";
+                    }, (command) => {
+                        command.ExecuteNonQuery();
+                    });
                 }
             }
         }
