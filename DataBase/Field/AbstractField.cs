@@ -73,6 +73,12 @@ namespace Birko.Data.DataBase.Field
                         ? (AbstractField)new DateTimeField(property, name, field.Primary, field.Unique)
                         : (AbstractField)new NullableDateTimeField(property, name, field.Primary, field.Unique);
             }
+            if (field is Attribute.NumericField numericField)
+            {
+                return (!isNullable)
+                        ? (AbstractField)new DecimalField(property, name, field.Primary, field.Unique, field.AutoIncrement, numericField.Precision, numericField.Scale)
+                        : (AbstractField)new NullableDecimalField(property, name, field.Primary, field.Unique, field.AutoIncrement, numericField.Precision, numericField.Scale);
+            }
             if (field is Attribute.DecimalField)
             {
                 return (!isNullable)

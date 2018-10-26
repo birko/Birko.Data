@@ -54,6 +54,18 @@ namespace Birko.Data.Attribute
     }
 
     [System.AttributeUsage(System.AttributeTargets.Property, Inherited = true)]
+    public class NumericField : DecimalField
+    {
+        public int Precision = 0;
+        public int Scale = 0;
+        public NumericField(string name = null, bool primary = false, bool unique = false, bool autoIncrement = false, int precision = 0, int scale = 0) : base(name, primary, unique, autoIncrement)
+        {
+            Precision = precision;
+            Scale = scale;
+        }
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Property, Inherited = true)]
     public class DateTimeField : Field
     {
         public DateTimeField(string name = null, bool primary = false, bool unique = false, bool autoIncrement = false) : base(name, primary, unique, autoIncrement) { }

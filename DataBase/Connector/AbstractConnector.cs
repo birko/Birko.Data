@@ -26,7 +26,7 @@ namespace Birko.Data.DataBase.Connector
 
         public abstract DbConnection CreateConnection(Store.PasswordSettings settings);
 
-        public abstract string ConvertType(DbType type);
+        public abstract string ConvertType(DbType type, Field.AbstractField field);
 
         public abstract string FieldDefinition(Field.AbstractField field);
 

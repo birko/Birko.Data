@@ -8,9 +8,13 @@ namespace Birko.Data.DataBase.Field
 {
     public class DecimalField : AbstractField
     {
-        public DecimalField(System.Reflection.PropertyInfo property, string name, bool primary = false, bool unique = false, bool autoincrement = false)
+        public int? Precision = null;
+        public int? Scale = null;
+        public DecimalField(System.Reflection.PropertyInfo property, string name, bool primary = false, bool unique = false, bool autoincrement = false, int? precision = null, int? scale = null)
             : base(property, name, DbType.Decimal, primary, true, unique, autoincrement)
         {
+            Precision = precision;
+            Scale = scale;
         }
 
         public override void Read(object value, DbDataReader reader, int index)
@@ -21,7 +25,7 @@ namespace Birko.Data.DataBase.Field
 
     public class NullableDecimalField : DecimalField
     {
-        public NullableDecimalField(System.Reflection.PropertyInfo property, string name, bool primary = false, bool unique = false, bool autoincrement = false)
+        public NullableDecimalField(System.Reflection.PropertyInfo property, string name, bool primary = false, bool unique = false, bool autoincrement = false, int? precision = null, int? scale = null)
             : base(property, name, primary, unique, autoincrement)
         {
             IsNotNull = false;
