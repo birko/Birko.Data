@@ -40,7 +40,7 @@ namespace Birko.Data.DataBase.Connector
                     DoCommand((command) => {
                         command.CommandText = "ALTER TABLE "
                             + tableName
-                            + " DROP "
+                            + " DROP COLUMN "
                             + field.Name;
                     }, (command) => {
                         command.ExecuteNonQuery();

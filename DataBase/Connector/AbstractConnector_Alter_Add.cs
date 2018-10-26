@@ -40,7 +40,7 @@ namespace Birko.Data.DataBase.Connector
                     DoCommand((command) => {
                         command.CommandText = "ALTER TABLE "
                             + tableName
-                            + " ADD "
+                            + " ADD COLUMN "
                             + FieldDefinition(field);
                     },  (command) => {
                         command.ExecuteNonQuery();
