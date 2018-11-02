@@ -271,31 +271,43 @@ namespace Birko.Data.DataBase.Connector
             return command;
         }
 
-        public virtual void DoCommand(Action<DbCommand> createCommand, Action<DbCommand> executeCommand)
+        public virtual void DoCommand(Action<DbCommand> createCommand, Action<DbCommand> executeCommand, bool isLock = false)
         {
-            lock (_settings)
+            if (!isLock)
             {
-                using (var db = CreateConnection(_settings))
+                RunCommand(createCommand, executeCommand);
+            }
+            else
+            {
+                lock (_settings)
                 {
-                    db.Open();
-                    using (var transaction = db.BeginTransaction())
+                    RunCommand(createCommand, executeCommand);
+                }
+            }
+        }
+
+        private void RunCommand(Action<DbCommand> createCommand, Action<DbCommand> executeCommand)
+        {
+            using (var db = CreateConnection(_settings))
+            {
+                db.Open();
+                using (var transaction = db.BeginTransaction())
+                {
+                    string commandText = null;
+                    try
                     {
-                        string commandText = null;
-                        try
+                        using (var command = db.CreateCommand())
                         {
-                            using (var command = db.CreateCommand())
-                            {
-                                createCommand?.Invoke(command);
-                                commandText = DataBase.GetGeneratedQuery(command);
-                                executeCommand?.Invoke(command);
-                            }
-                            transaction.Commit();
+                            createCommand?.Invoke(command);
+                            commandText = DataBase.GetGeneratedQuery(command);
+                            executeCommand?.Invoke(command);
                         }
-                        catch (Exception ex)
-                        {
-                            transaction.Rollback();
-                            InitException(ex, commandText);
-                        }
+                        transaction.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        InitException(ex, commandText);
                     }
                 }
             }
