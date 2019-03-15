@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Text;
 using Birko.Data.Model;
@@ -14,6 +15,11 @@ namespace Birko.Data.Repository
         protected string _path = null;
         protected Store.IStore<TModel> _store;
         protected IDictionary<Guid?, string> _modelHash = new Dictionary<Guid?, string>();
+
+        public AbstractRepository(string path)
+        {
+            _path = path;
+        }
 
         public virtual void StoreHash(TModel data)
         {
@@ -32,7 +38,6 @@ namespace Birko.Data.Repository
                 {
                     _modelHash.Add(data.Guid, hash);
                 }
-
             }
         }
 
@@ -137,9 +142,9 @@ namespace Birko.Data.Repository
             if (_store != null && _store.Count(x => x.Guid.Value == Id) > 0)
             {
                 TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
-                _store.List(x => x.Guid == Id, (item) =>
+                Read(x => x.Guid == Id, (item) =>
                 {
-                    result.LoadFrom(item);
+                    result = item;
                 });
 
                 return result;
@@ -149,9 +154,14 @@ namespace Birko.Data.Repository
 
         public virtual void Read(Action<TViewModel> readAction)
         {
+            Read(null, readAction);
+        }
+
+        public virtual void Read(Expression<Func<TModel, bool>> expr, Action<TViewModel> readAction)
+        {
             if (_store != null && _store.Count() > 0 && readAction != null)
             {
-                _store.List((item) =>
+                _store.List(expr, (item) =>
                 {
                     TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
                     result.LoadFrom(item);

@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Birko.Data.Attribute;
 using Birko.Data.ViewModel;
 
 namespace Birko.Data.Model
 {
-    public abstract class AbstractModel : ICopyable<AbstractModel>, ILoadable<ModelViewModel>
+    public abstract partial class AbstractModel : ICopyable<AbstractModel>, ILoadable<ModelViewModel>
     {
-        [GuidField(null, true, true)]
-        public Guid? Guid { get; set; } = null;
+        public virtual Guid? Guid { get; set; } = null;
 
         public AbstractModel CopyTo(AbstractModel clone = null)
         {

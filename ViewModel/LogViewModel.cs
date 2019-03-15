@@ -5,10 +5,11 @@ using System.Text;
 
 namespace Birko.Data.ViewModel
 {
-    public abstract class LogViewModel : ModelViewModel, ILoadable<AbstractLogModel>
+    public abstract class LogViewModel : ModelViewModel, ILoadable<AbstractLogModel>, ILoadable<LogViewModel>
     {
         public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
+        public DateTime? PrevUpdatedAt { get; private set; } = null;
 
         public void LoadFrom(AbstractLogModel data)
         {
@@ -17,6 +18,18 @@ namespace Birko.Data.ViewModel
             {
                 CreatedAt = data.CreatedAt;
                 UpdatedAt = data.UpdatedAt;
+                PrevUpdatedAt = data.PrevUpdatedAt;
+            }
+        }
+
+        public void LoadFrom(LogViewModel data)
+        {
+            base.LoadFrom(data);
+            if (data != null)
+            {
+                CreatedAt = data.CreatedAt;
+                UpdatedAt = data.UpdatedAt;
+                PrevUpdatedAt = data.PrevUpdatedAt;
             }
         }
     }

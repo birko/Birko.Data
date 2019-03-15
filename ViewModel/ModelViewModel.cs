@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Birko.Data.ViewModel
 {
-    public abstract class ModelViewModel : ViewModel, ILoadable<AbstractModel>
+    public abstract class ModelViewModel : ViewModel, ILoadable<AbstractModel>, ILoadable<ModelViewModel>
     {
         public const string GuidProperty = "Guid";
 
@@ -24,6 +24,14 @@ namespace Birko.Data.ViewModel
         }
 
         public void LoadFrom(AbstractModel data)
+        {
+            if (data != null)
+            {
+                Guid = data.Guid;
+            }
+        }
+
+        public void LoadFrom(ModelViewModel data)
         {
             if (data != null)
             {

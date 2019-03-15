@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Birko.Data.Attribute;
 using Birko.Data.ViewModel;
 
 namespace Birko.Data.Model
 {
-    public abstract class AbstractLogModel : AbstractModel, ICopyable<AbstractLogModel>, ILoadable<ViewModel.LogViewModel>
+    public abstract partial class AbstractLogModel : AbstractModel, ICopyable<AbstractLogModel>, ILoadable<ViewModel.LogViewModel>
     {
-        [DateTimeField]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        [DateTimeField]
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public virtual DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public virtual DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public virtual DateTime? PrevUpdatedAt { get; set; } = null;
 
         public AbstractLogModel CopyTo(AbstractLogModel clone = null)
         {
@@ -20,6 +18,7 @@ namespace Birko.Data.Model
             {
                 clone.CreatedAt = CreatedAt;
                 clone.UpdatedAt = UpdatedAt;
+                clone.PrevUpdatedAt = PrevUpdatedAt;
             }
             return clone;
         }
@@ -31,6 +30,7 @@ namespace Birko.Data.Model
             {
                 CreatedAt = data.CreatedAt;
                 UpdatedAt = data.UpdatedAt;
+                PrevUpdatedAt = data.PrevUpdatedAt;
             }
         }
     }
