@@ -16,5 +16,6 @@ namespace Birko.Data.Store
         void Save(T data, StoreDataDelegate<T> storeDelegate = null);
         void Delete(T data);
         void StoreChanges();
+        void Destroy();
     }
 }
