@@ -21,17 +21,17 @@ namespace Birko.Data.Helper
         /// </summary>
         public static string StripTagsRegexCompiled(string source)
         {
-            return _htmlRegex.Replace(source, string.Empty);
+            return (!string.IsNullOrEmpty(source)) ? _htmlRegex.Replace(source, string.Empty) : string.Empty;
         }
 
         public static string StripATagsRegexCompiled(string source)
         {
-            return _htmlARegex.Replace(source, string.Empty);
+            return (!string.IsNullOrEmpty(source)) ? _htmlARegex.Replace(source, string.Empty) : string.Empty;
         }
 
         public static string StripImgTagsRegexCompiled(string source)
         {
-            return _htmlImgRegex.Replace(source, string.Empty);
+            return (!string.IsNullOrEmpty(source)) ? _htmlImgRegex.Replace(source, string.Empty) : string.Empty;
         }
     }
 }

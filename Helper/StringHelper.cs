@@ -19,69 +19,89 @@ namespace Birko.Data.Helper
 
         public static string GenerateSlug(string value)
         {
-            // convert to lower case
-            value = value.ToLowerInvariant();
+            if (!string.IsNullOrEmpty(value))
+            {
+                // convert to lower case
+                value = value.ToLowerInvariant();
 
-            // remove diacritics (accents)
-            value = RemoveDiacritics(value);
+                // remove diacritics (accents)
+                value = RemoveDiacritics(value);
 
-            // ensure all word delimiters are hyphens
-            value = WordDelimiters.Replace(value, "-");
+                // ensure all word delimiters are hyphens
+                value = WordDelimiters.Replace(value, "-");
 
-            // strip out invalid characters
-            value = InvalidChars.Replace(value, "");
+                // strip out invalid characters
+                value = InvalidChars.Replace(value, "");
 
-            // replace multiple hyphens (-) with a single hyphen
-            value = MultipleHyphens.Replace(value, "-");
+                // replace multiple hyphens (-) with a single hyphen
+                value = MultipleHyphens.Replace(value, "-");
 
-            // trim hyphens (-) from ends
-            return value.Trim('-');
+                // trim hyphens (-) from ends
+                return value.Trim('-');
+            }
+            return string.Empty;
         }
 
         public static string RemoveDiacritics(string text)
         {
-            var normalizedString = text.Normalize(NormalizationForm.FormD);
-            var stringBuilder = new StringBuilder();
-
-            foreach (var c in normalizedString)
+            if (!string.IsNullOrEmpty(text))
             {
-                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
-                {
-                    stringBuilder.Append(c);
-                }
-            }
+                var normalizedString = text.Normalize(NormalizationForm.FormD);
+                var stringBuilder = new StringBuilder();
 
-            return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
+                foreach (var c in normalizedString)
+                {
+                    var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                    if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                    {
+                        stringBuilder.Append(c);
+                    }
+                }
+
+                return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
+            }
+            return string.Empty;
         }
 
         public static string ToUrlSlug(string phrase)
         {
-            string str = RemoveDiacritics(phrase).ToLower();
-            //string str = phrase;
-            // invalid chars
-            str = Regex.Replace(str, @"[^a-z0-9\/\s-]", "");
-            str = RemoveMultipleSpaces(str);
-            // cut and trim
-            str = str.Substring(0, str.Length <= 55 ? str.Length : 55).Trim();
-            str = Regex.Replace(str, @"\s", "-"); // hyphens
-            str = Regex.Replace(str, @"\/", "-"); // hyphens
-            return str;
+            if (!string.IsNullOrEmpty(phrase))
+            {
+                string str = RemoveDiacritics(phrase).ToLower();
+                //string str = phrase;
+                // invalid chars
+                str = Regex.Replace(str, @"[^a-z0-9\/\s-]", "");
+                str = RemoveMultipleSpaces(str);
+                // cut and trim
+                str = str.Substring(0, str.Length <= 55 ? str.Length : 55).Trim();
+                str = Regex.Replace(str, @"\s", "-"); // hyphens
+                str = Regex.Replace(str, @"\/", "-"); // hyphens
+                return str;
+            }
+            return string.Empty;
         }
 
         public static string RemoveMultipleSpaces(string str)
         {
-            // convert multiple spaces into one space
-            str = Regex.Replace(str, @"\s+", " ").Trim();
-            return str;
+            if (!string.IsNullOrEmpty(str))
+            {
+                // convert multiple spaces into one space
+                str = Regex.Replace(str, @"\s+", " ").Trim();
+                return str;
+            }
+            return string.Empty;
         }
 
         public static string HashText(string text)
         {
-            var data = Encoding.ASCII.GetBytes(text);
-            var sha1 = new SHA1CryptoServiceProvider();
-            var sha1data = sha1.ComputeHash(data);
-            return Encoding.ASCII.GetString(sha1data);
+            if (!string.IsNullOrEmpty(text))
+            {
+                var data = Encoding.ASCII.GetBytes(text);
+                var sha1 = new SHA1CryptoServiceProvider();
+                var sha1data = sha1.ComputeHash(data);
+                return Encoding.ASCII.GetString(sha1data);
+            }
+            return string.Empty;
         }
     }
 }
