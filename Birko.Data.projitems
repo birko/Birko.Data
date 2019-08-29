@@ -10,9 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\StoreException.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Helper\HtmlHelper.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Helper\ObjectHelper.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Helper\StringHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Model\AbstractLogModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Model\AbstractModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Model\ICopyable.cs" />
