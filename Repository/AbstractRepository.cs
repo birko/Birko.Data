@@ -14,7 +14,7 @@ namespace Birko.Data.Repository
     {
         protected string _path = null;
         protected Store.IStore<TModel> _store;
-        protected IDictionary<Guid?, string> _modelHash = new Dictionary<Guid?, string>();
+        protected IDictionary<Guid?, byte[]> _modelHash = new Dictionary<Guid?, byte[]>();
 
         public AbstractRepository(string path)
         {
@@ -27,9 +27,9 @@ namespace Birko.Data.Repository
             {
                 if (_modelHash == null)
                 {
-                    _modelHash = new Dictionary<Guid?, string>();
+                    _modelHash = new Dictionary<Guid?, byte[]>();
                 }
-                var hash = CalculateHash(data);
+                var hash = CalulateHash(data);
                 if (_modelHash.ContainsKey(data.Guid))
                 {
                     _modelHash[data.Guid] = hash;
@@ -39,6 +39,11 @@ namespace Birko.Data.Repository
                     _modelHash.Add(data.Guid, hash);
                 }
             }
+        }
+
+        public virtual byte[] CalulateHash(TModel data)
+        {
+            return Birko.Data.Helper.StringHelper.CalculateSHA1Hash(Newtonsoft.Json.JsonConvert.SerializeObject(data));
         }
 
         public virtual void RemoveHash(TModel data)
@@ -54,8 +59,8 @@ namespace Birko.Data.Repository
             var result = true;
             if (data != null && data.Guid != null)
             {
-                var hash = CalculateHash(data);
-                if (_modelHash != null && _modelHash.ContainsKey(data.Guid) && _modelHash[data.Guid] == hash)
+                var hash = CalulateHash(data);
+                if (_modelHash != null && _modelHash.ContainsKey(data.Guid) && Helper.ObjectHelper.CompareHash(_modelHash[data.Guid], hash))
                 {
                     result = false;
                 }
@@ -69,14 +74,6 @@ namespace Birko.Data.Repository
             return result;
         }
 
-
-        public virtual string CalculateHash(TModel data)
-        {
-            var dataBytes = Encoding.ASCII.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(data));
-            var sha1 = new SHA1CryptoServiceProvider();
-            var sha1data = sha1.ComputeHash(dataBytes);
-            return Encoding.ASCII.GetString(sha1data);
-        }
 
         public virtual TViewModel Create(TViewModel data, ProcessDataDelegate<TModel> processDelegate = null)
         {
@@ -174,6 +171,11 @@ namespace Birko.Data.Repository
         public void StoreChanges()
         {
             _store?.StoreChanges();
+        }
+
+        public virtual void Destroy()
+        {
+            _store?.Destroy();
         }
     }
 }

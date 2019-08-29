@@ -17,5 +17,7 @@ namespace Birko.Data.Repository
         T Update(Guid Id, T data, ProcessDataDelegate<TModel> processDelegate = null);
         T Delete(Guid Id);
         long Count();
+
+        void Destroy();
     }
 }
