@@ -106,6 +106,10 @@ namespace Birko.Data.Repository
                 StoreChanges();
                 data.LoadFrom(item);
             }
+            else if (ReadMode)
+            {
+                throw new AccessViolationException("Repository is in Read Mode");
+            }
             return data;
         }
 
@@ -126,6 +130,10 @@ namespace Birko.Data.Repository
                 StoreChanges();
                 data.LoadFrom(item);
             }
+            else if (ReadMode)
+            {
+                throw new AccessViolationException("Repository is in Read Mode");
+            }
             return data;
         }
 
@@ -142,6 +150,10 @@ namespace Birko.Data.Repository
                 });
                 StoreChanges();
                 return result;
+            }
+            else if (ReadMode)
+            {
+                throw new AccessViolationException("Repository is in Read Mode");
             }
             return default(TViewModel);
         }
