@@ -43,7 +43,7 @@ namespace Birko.Data.Repository
 
         public virtual byte[] CalulateHash(TModel data)
         {
-            return Birko.Data.Helper.StringHelper.CalculateSHA1Hash(Newtonsoft.Json.JsonConvert.SerializeObject(data));
+            return Birko.Data.Helper.StringHelper.CalculateSHA1Hash(System.Text.Json.JsonSerializer.Serialize(data));
         }
 
         public virtual void RemoveHash(TModel data)
