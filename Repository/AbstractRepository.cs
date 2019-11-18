@@ -12,6 +12,7 @@ namespace Birko.Data.Repository
         where TModel:Model.AbstractModel, Model.ILoadable<TViewModel>
         where TViewModel:Model.ILoadable<TModel>
     {
+        private bool _isReadMode = false;
         protected string _path = null;
         protected Store.IStore<TModel> _store;
         protected IDictionary<Guid?, byte[]> _modelHash = new Dictionary<Guid?, byte[]>();
@@ -21,9 +22,25 @@ namespace Birko.Data.Repository
             _path = path;
         }
 
+        public bool ReadMode
+        {
+            get
+            {
+                return _isReadMode;
+            }
+            set
+            {
+                _isReadMode = value;
+                if (_isReadMode && _modelHash.Any())
+                {
+                    _modelHash.Clear();
+                }
+            }
+        }
+
         public virtual void StoreHash(TModel data)
         {
-            if (data != null && data.Guid != null)
+            if (!ReadMode && data != null && data.Guid != null)
             {
                 if (_modelHash == null)
                 {
@@ -48,7 +65,7 @@ namespace Birko.Data.Repository
 
         public virtual void RemoveHash(TModel data)
         {
-            if (data != null  && data.Guid != null && _modelHash != null)
+            if (!ReadMode && data != null && data.Guid != null && _modelHash != null)
             {
                 _modelHash.Remove(data.Guid);
             }
@@ -77,7 +94,7 @@ namespace Birko.Data.Repository
 
         public virtual TViewModel Create(TViewModel data, ProcessDataDelegate<TModel> processDelegate = null)
         {
-            if (_store != null && data != null)
+            if (!ReadMode && _store != null && data != null)
             {
                 TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
                 item.LoadFrom(data);
@@ -94,7 +111,7 @@ namespace Birko.Data.Repository
 
         public TViewModel Update(Guid Id, TViewModel data, ProcessDataDelegate<TModel> processDelegate = null)
         {
-            if (_store != null)
+            if (!ReadMode && _store != null)
             {
                 TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
                 item.LoadFrom(data);
@@ -114,7 +131,7 @@ namespace Birko.Data.Repository
 
         public virtual TViewModel Delete(Guid Id)
         {
-            if (_store != null && _store.Count(x => x.Guid == Id) > 0)
+            if (!ReadMode && _store != null && _store.Count(x => x.Guid == Id) > 0)
             {
                 TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
                 _store.List(x => x.Guid == Id, (item) =>
