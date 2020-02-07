@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Birko.Data.Store
+namespace Birko.Data.Stores
 {
 
     public class Settings
@@ -21,7 +21,7 @@ namespace Birko.Data.Store
         public string Password { get; set; }
     }
 
-    public class RemoteSettins : PasswordSettings
+    public class RemoteSettings : PasswordSettings
     {
         public string UserName { get; set; }
         public int Port { get; set; }

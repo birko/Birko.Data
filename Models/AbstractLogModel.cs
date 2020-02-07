@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Birko.Data.ViewModel;
+using Birko.Data.ViewModels;
 
-namespace Birko.Data.Model
+namespace Birko.Data.Models
 {
-    public abstract partial class AbstractLogModel : AbstractModel, ICopyable<AbstractLogModel>, ILoadable<ViewModel.LogViewModel>
+    public abstract partial class AbstractLogModel : AbstractModel, ICopyable<AbstractLogModel>, ILoadable<ViewModels.LogViewModel>
     {
         public virtual DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public virtual DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

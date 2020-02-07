@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Birko.Data.Repository
+namespace Birko.Data.Repositories
 {
     public interface IInitializer
     {

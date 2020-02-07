@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Birko.Data.Model
+namespace Birko.Data.Models
 {
     public interface ICopyable<T>
     {

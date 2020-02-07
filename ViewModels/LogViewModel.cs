@@ -1,9 +1,9 @@
-﻿using Birko.Data.Model;
+﻿using Birko.Data.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Birko.Data.ViewModel
+namespace Birko.Data.ViewModels
 {
     public abstract class LogViewModel : ModelViewModel, ILoadable<AbstractLogModel>, ILoadable<LogViewModel>
     {

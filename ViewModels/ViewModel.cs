@@ -1,10 +1,10 @@
-﻿using Birko.Data.Model;
+﻿using Birko.Data.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 
-namespace Birko.Data.ViewModel
+namespace Birko.Data.ViewModels
 {
     public abstract class ViewModel : INotifyPropertyChanged
     {

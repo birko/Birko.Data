@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace Birko.Data.Store
+namespace Birko.Data.Stores
 {
-    public delegate T StoreDataDelegate<T>(T data) where T : Model.AbstractModel;
-    public interface IStore<T> where T: Model.AbstractModel
+    public delegate T StoreDataDelegate<T>(T data) where T : Models.AbstractModel;
+    public interface IStore<T> where T: Models.AbstractModel
     {
         void List(Action<T> listAction);
         void List(Expression<Func<T, bool>> filter, Action<T> listAction);

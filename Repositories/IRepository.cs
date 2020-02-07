@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace Birko.Data.Repository
+namespace Birko.Data.Repositories
 {
-    public delegate TModel ProcessDataDelegate<TModel>(TModel data) where TModel: Model.AbstractModel;
+    public delegate TModel ProcessDataDelegate<TModel>(TModel data) where TModel: Models.AbstractModel;
 
     public interface IRepository<T, TModel>
-        where TModel : Model.AbstractModel
+        where TModel : Models.AbstractModel
     {
         void Read(Action<T> readAction);
         void Read(Expression<Func<TModel, bool>> expr,  Action<T> readAction);

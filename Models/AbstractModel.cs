@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Birko.Data.ViewModel;
+using Birko.Data.ViewModels;
 
-namespace Birko.Data.Model
+namespace Birko.Data.Models
 {
     public abstract partial class AbstractModel : ICopyable<AbstractModel>, ILoadable<ModelViewModel>
     {

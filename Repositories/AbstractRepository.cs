@@ -4,17 +4,17 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Text;
-using Birko.Data.Model;
+using Birko.Data.Models;
 
-namespace Birko.Data.Repository
+namespace Birko.Data.Repositories
 {
     public abstract class AbstractRepository<TViewModel, TModel> : IRepository<TViewModel, TModel>
-        where TModel:Model.AbstractModel, Model.ILoadable<TViewModel>
-        where TViewModel:Model.ILoadable<TModel>
+        where TModel:Models.AbstractModel, Models.ILoadable<TViewModel>
+        where TViewModel:Models.ILoadable<TModel>
     {
         private bool _isReadMode = false;
         protected string _path = null;
-        protected Store.IStore<TModel> _store;
+        protected Stores.IStore<TModel> _store;
         protected IDictionary<Guid?, byte[]> _modelHash = new Dictionary<Guid?, byte[]>();
 
         public AbstractRepository(string path)
@@ -60,7 +60,7 @@ namespace Birko.Data.Repository
 
         public virtual byte[] CalulateHash(TModel data)
         {
-            return Birko.Data.Helper.StringHelper.CalculateSHA1Hash(System.Text.Json.JsonSerializer.Serialize(data));
+            return Birko.Data.Helpers.StringHelper.CalculateSHA1Hash(System.Text.Json.JsonSerializer.Serialize(data));
         }
 
         public virtual void RemoveHash(TModel data)
@@ -77,7 +77,7 @@ namespace Birko.Data.Repository
             if (data != null && data.Guid != null)
             {
                 var hash = CalulateHash(data);
-                if (_modelHash != null && _modelHash.ContainsKey(data.Guid) && Helper.ObjectHelper.CompareHash(_modelHash[data.Guid], hash))
+                if (_modelHash != null && _modelHash.ContainsKey(data.Guid) && Helpers.ObjectHelper.CompareHash(_modelHash[data.Guid], hash))
                 {
                     result = false;
                 }
