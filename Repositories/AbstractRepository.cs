@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Text;
 using Birko.Data.Models;
+using Birko.Data.Stores;
 
 namespace Birko.Data.Repositories
 {
@@ -17,9 +18,9 @@ namespace Birko.Data.Repositories
         protected Stores.IStore<TModel> _store;
         protected IDictionary<Guid?, byte[]> _modelHash = new Dictionary<Guid?, byte[]>();
 
-        public AbstractRepository(string path)
+        public AbstractRepository(Settings settings)
         {
-            _path = path;
+            _path = settings.Location;
         }
 
         public bool ReadMode
