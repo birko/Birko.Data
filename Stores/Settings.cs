@@ -10,8 +10,10 @@ namespace Birko.Data.Stores
         public string Location { get; set; }
         public string Name { get; set; }
 
-
-        public Settings(string location, string name)
+        public Settings()
+        {
+        }
+        public Settings(string location, string name) : this()
         {
             Location = location;
             Name = name;
