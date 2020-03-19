@@ -5,7 +5,13 @@ using System.Text;
 namespace Birko.Data.Stores
 {
 
-    public class Settings : Models.ILoadable<Settings>
+    public interface ISettings : Models.ILoadable<ISettings>
+    {
+        string GetId();
+
+    }
+
+    public class Settings : ISettings, Models.ILoadable<Settings>
     {
         public string Location { get; set; }
         public string Name { get; set; }
@@ -13,6 +19,7 @@ namespace Birko.Data.Stores
         public Settings()
         {
         }
+
         public Settings(string location, string name) : this()
         {
             Location = location;
@@ -30,6 +37,11 @@ namespace Birko.Data.Stores
                 Location = data.Location;
                 Name = data.Name;
             }
+        }
+
+        public void LoadFrom(ISettings data)
+        {
+            LoadFrom((Settings)data);
         }
     }
 

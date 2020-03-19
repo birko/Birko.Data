@@ -9,19 +9,26 @@ using Birko.Data.Stores;
 
 namespace Birko.Data.Repositories
 {
-    public abstract class AbstractRepository<TViewModel, TModel> : IRepository<TViewModel, TModel>
+    public abstract class AbstractRepository<TViewModel, TModel, TSettings> : IRepository<TViewModel, TModel, TSettings>
         where TModel:Models.AbstractModel, Models.ILoadable<TViewModel>
         where TViewModel:Models.ILoadable<TModel>
+        where TSettings: Stores.Settings
     {
         private bool _isReadMode = false;
         protected string _path = null;
-        protected Stores.IStore<TModel> _store;
         protected IDictionary<Guid?, byte[]> _modelHash = new Dictionary<Guid?, byte[]>();
 
-        public AbstractRepository(Settings settings)
+        public AbstractRepository()
+        {
+
+        }
+        protected abstract IStore<TModel, TSettings> GetStore();
+
+        public virtual void SetSettings(TSettings settings)
         {
             _path = settings.Location;
         }
+
 
         public bool ReadMode
         {
@@ -61,6 +68,7 @@ namespace Birko.Data.Repositories
 
         public virtual byte[] CalulateHash(TModel data)
         {
+            //return Birko.Data.Helpers.StringHelper.CalculateSHA1Hash(Newtonsoft.Json.JsonConvert.SerializeObject(data));
             return Birko.Data.Helpers.StringHelper.CalculateSHA1Hash(System.Text.Json.JsonSerializer.Serialize(data));
         }
 
@@ -95,6 +103,7 @@ namespace Birko.Data.Repositories
 
         public virtual TViewModel Create(TViewModel data, ProcessDataDelegate<TModel> processDelegate = null)
         {
+            var _store = GetStore();
             if (!ReadMode && _store != null && data != null)
             {
                 TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
@@ -116,6 +125,7 @@ namespace Birko.Data.Repositories
 
         public TViewModel Update(Guid Id, TViewModel data, ProcessDataDelegate<TModel> processDelegate = null)
         {
+            var _store = GetStore();
             if (!ReadMode && _store != null)
             {
                 TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
@@ -140,6 +150,7 @@ namespace Birko.Data.Repositories
 
         public virtual TViewModel Delete(Guid Id)
         {
+            var _store = GetStore();
             if (!ReadMode && _store != null && _store.Count(x => x.Guid == Id) > 0)
             {
                 TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
@@ -156,16 +167,18 @@ namespace Birko.Data.Repositories
             {
                 throw new AccessViolationException("Repository is in Read Mode");
             }
-            return default(TViewModel);
+            return default;
         }
 
         public virtual long Count()
         {
+            var _store = GetStore();
             return (_store != null ) ?_store.Count() : 0;
         }
 
         public virtual TViewModel Read(Guid Id)
         {
+            var _store = GetStore();
             if (_store != null && _store.Count(x => x.Guid.Value == Id) > 0)
             {
                 TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
@@ -176,7 +189,7 @@ namespace Birko.Data.Repositories
 
                 return result;
             }
-            return default(TViewModel);
+            return default;
         }
 
         public virtual void Read(Action<TViewModel> readAction)
@@ -186,6 +199,7 @@ namespace Birko.Data.Repositories
 
         public virtual void Read(Expression<Func<TModel, bool>> expr, Action<TViewModel> readAction)
         {
+            var _store = GetStore();
             if (_store != null && _store.Count() > 0 && readAction != null)
             {
                 _store.List(expr, (item) =>
@@ -200,11 +214,13 @@ namespace Birko.Data.Repositories
 
         public void StoreChanges()
         {
+            var _store = GetStore();
             _store?.StoreChanges();
         }
 
         public virtual void Destroy()
         {
+            var _store = GetStore();
             _store?.Destroy();
         }
     }
