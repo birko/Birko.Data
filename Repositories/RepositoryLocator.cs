@@ -34,7 +34,7 @@ namespace Birko.Data.Repositories
                 _repositories[id].Add(type, (TRepository)Activator.CreateInstance(type, new object[] { }));
                 if (!string.IsNullOrEmpty(id))
                 {
-                    ((IStoreRepository<TSettings>) _repositories[id][type]).SetSettings(settings);
+                    ((IStoreRepository<Stores.ISettings>)_repositories[id][type]).SetSettings(settings);
                 }
 
             }

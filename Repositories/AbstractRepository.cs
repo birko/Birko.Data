@@ -9,24 +9,27 @@ using Birko.Data.Stores;
 
 namespace Birko.Data.Repositories
 {
-    public abstract class AbstractRepository<TViewModel, TModel, TSettings> : IRepository<TViewModel, TModel, TSettings>
+    public abstract class AbstractRepository<TViewModel, TModel> : IRepository<TViewModel, TModel, Stores.ISettings>
         where TModel:Models.AbstractModel, Models.ILoadable<TViewModel>
         where TViewModel:Models.ILoadable<TModel>
-        where TSettings: Stores.Settings
     {
         private bool _isReadMode = false;
         protected string _path = null;
         protected IDictionary<Guid?, byte[]> _modelHash = new Dictionary<Guid?, byte[]>();
+        protected IStore<TModel, Stores.ISettings> Store { get; set; }
 
         public AbstractRepository()
         {
 
         }
-        protected abstract IStore<TModel, TSettings> GetStore();
 
-        public virtual void SetSettings(TSettings settings)
+
+        public virtual void SetSettings(Stores.ISettings settings)
         {
-            _path = settings.Location;
+            if (settings is Settings setts)
+            {
+                _path = setts.Location;
+            }
         }
 
 
@@ -103,7 +106,7 @@ namespace Birko.Data.Repositories
 
         public virtual TViewModel Create(TViewModel data, ProcessDataDelegate<TModel> processDelegate = null)
         {
-            var _store = GetStore();
+            var _store = Store;
             if (!ReadMode && _store != null && data != null)
             {
                 TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
@@ -125,7 +128,7 @@ namespace Birko.Data.Repositories
 
         public TViewModel Update(Guid Id, TViewModel data, ProcessDataDelegate<TModel> processDelegate = null)
         {
-            var _store = GetStore();
+            var _store = Store;
             if (!ReadMode && _store != null)
             {
                 TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
@@ -150,7 +153,7 @@ namespace Birko.Data.Repositories
 
         public virtual TViewModel Delete(Guid Id)
         {
-            var _store = GetStore();
+            var _store = Store;
             if (!ReadMode && _store != null && _store.Count(x => x.Guid == Id) > 0)
             {
                 TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
@@ -172,13 +175,13 @@ namespace Birko.Data.Repositories
 
         public virtual long Count()
         {
-            var _store = GetStore();
+            var _store = Store;
             return (_store != null ) ?_store.Count() : 0;
         }
 
         public virtual TViewModel Read(Guid Id)
         {
-            var _store = GetStore();
+            var _store = Store;
             if (_store != null && _store.Count(x => x.Guid.Value == Id) > 0)
             {
                 TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
@@ -199,7 +202,7 @@ namespace Birko.Data.Repositories
 
         public virtual void Read(Expression<Func<TModel, bool>> expr, Action<TViewModel> readAction)
         {
-            var _store = GetStore();
+            var _store =  Store;
             if (_store != null && _store.Count() > 0 && readAction != null)
             {
                 _store.List(expr, (item) =>
@@ -214,13 +217,13 @@ namespace Birko.Data.Repositories
 
         public void StoreChanges()
         {
-            var _store = GetStore();
+            var _store = Store;
             _store?.StoreChanges();
         }
 
         public virtual void Destroy()
         {
-            var _store = GetStore();
+            var _store = Store;
             _store?.Destroy();
         }
     }

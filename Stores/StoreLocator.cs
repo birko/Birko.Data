@@ -36,7 +36,7 @@ namespace Birko.Data.Stores
                 _stores[id].Add(type, (TStore)Activator.CreateInstance(type, new object[] { }));
                 if (!string.IsNullOrEmpty(id))
                 {
-                    ((ISettingsStore<TSettings>)_stores[id][type]).SetSettings(settings);
+                    ((ISettingsStore<ISettings>)_stores[id][type]).SetSettings(settings);
                 }
             }
             return (TStore)_stores[id][type];

@@ -6,9 +6,8 @@ using Birko.Data.Models;
 
 namespace Birko.Data.Stores
 {
-    public abstract class AbstractStore<T, TSettings> : IStore<T, TSettings>
+    public abstract class AbstractStore<T> : IStore<T, ISettings>
          where T : Models.AbstractModel
-         where TSettings : ISettings
     {
         public abstract long Count(Expression<Func<T, bool>> filter);
         public abstract void Delete(T data);
@@ -16,7 +15,7 @@ namespace Birko.Data.Stores
         public abstract void Init();
         public abstract void List(Expression<Func<T, bool>> filter, Action<T> listAction);
         public abstract void Save(T data, StoreDataDelegate<T> storeDelegate = null);
-        public abstract void SetSettings(TSettings settings);
+        public abstract void SetSettings(ISettings settings);
         public abstract void StoreChanges();
         public virtual long Count()
         {

@@ -16,9 +16,7 @@ namespace Birko.Data.Stores
         public string Location { get; set; }
         public string Name { get; set; }
 
-        public Settings()
-        {
-        }
+        public Settings() { }
 
         public Settings(string location, string name) : this()
         {
@@ -49,6 +47,7 @@ namespace Birko.Data.Stores
     {
         public string Password { get; set; }
 
+        public PasswordSettings() : base() { }
         public PasswordSettings(string location, string name, string password = null) : base(location, name)
         {
             Password = password;
@@ -69,6 +68,7 @@ namespace Birko.Data.Stores
         public string UserName { get; set; }
         public int Port { get; set; }
 
+        public RemoteSettings() : base() { }
         public RemoteSettings(string location, string name, string username, string password, int port) : base(location, name, password)
         {
             UserName = username;
