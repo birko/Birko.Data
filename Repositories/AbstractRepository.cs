@@ -175,8 +175,13 @@ namespace Birko.Data.Repositories
 
         public virtual long Count()
         {
+            return Count(null);
+        }
+
+        public virtual long Count(Expression<Func<TModel, bool>> filter)
+        {
             var _store = Store;
-            return (_store != null ) ?_store.Count() : 0;
+            return (_store != null) ? _store.Count(filter) : 0;
         }
 
         public virtual TViewModel Read(Guid Id)
@@ -203,7 +208,7 @@ namespace Birko.Data.Repositories
         public virtual void Read(Expression<Func<TModel, bool>> expr, Action<TViewModel> readAction, int? limit = null, int? offset = null)
         {
             var _store =  Store;
-            if (_store != null && _store.Count() > 0 && readAction != null)
+            if (_store != null && _store.Count(expr) > 0 && readAction != null)
             {
                 _store.List(expr, (item) =>
                 {
