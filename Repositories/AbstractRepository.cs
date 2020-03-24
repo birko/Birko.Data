@@ -195,12 +195,12 @@ namespace Birko.Data.Repositories
             return default;
         }
 
-        public virtual void Read(Action<TViewModel> readAction)
+        public virtual void Read(Action<TViewModel> readAction, int? limit = null, int? offset = null)
         {
-            Read(null, readAction);
+            Read(null, readAction, limit, offset);
         }
 
-        public virtual void Read(Expression<Func<TModel, bool>> expr, Action<TViewModel> readAction)
+        public virtual void Read(Expression<Func<TModel, bool>> expr, Action<TViewModel> readAction, int? limit = null, int? offset = null)
         {
             var _store =  Store;
             if (_store != null && _store.Count() > 0 && readAction != null)
@@ -211,7 +211,7 @@ namespace Birko.Data.Repositories
                     result.LoadFrom(item);
                     StoreHash(item);
                     readAction?.Invoke(result);
-                });
+                }, limit, offset);
             }
         }
 

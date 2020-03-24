@@ -13,7 +13,7 @@ namespace Birko.Data.Stores
         public abstract void Delete(T data);
         public abstract void Destroy();
         public abstract void Init();
-        public abstract void List(Expression<Func<T, bool>> filter, Action<T> listAction);
+        public abstract void List(Expression<Func<T, bool>> filter, Action<T> listAction, int? limit = null, int? offset = null);
         public abstract void Save(T data, StoreDataDelegate<T> storeDelegate = null);
         public abstract void SetSettings(ISettings settings);
         public abstract void StoreChanges();

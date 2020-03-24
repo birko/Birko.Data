@@ -26,7 +26,7 @@ namespace Birko.Data.Stores
         where TSettings : ISettings
     {
         void List(Action<T> listAction);
-        void List(Expression<Func<T, bool>> filter, Action<T> listAction);
+        void List(Expression<Func<T, bool>> filter, Action<T> listAction, int? limit = null, int? offset = null);
         long Count(Expression<Func<T, bool>> filter);
         void Save(T data, StoreDataDelegate<T> storeDelegate = null);
         void Delete(T data);

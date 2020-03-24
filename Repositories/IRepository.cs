@@ -26,8 +26,8 @@ namespace Birko.Data.Repositories
         where TSettings: Stores.ISettings
     {
 
-        void Read(Action<T> readAction);
-        void Read(Expression<Func<TModel, bool>> expr, Action<T> readAction);
+        void Read(Action<T> readAction, int? limit = null, int? offset = null);
+        void Read(Expression<Func<TModel, bool>> expr, Action<T> readAction, int? limit = null, int? offset = null);
         T Read(Guid Id);
         T Create(T data, ProcessDataDelegate<TModel> processDelegate = null);
         T Update(Guid Id, T data, ProcessDataDelegate<TModel> processDelegate = null);
