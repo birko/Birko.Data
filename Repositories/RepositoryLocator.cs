@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Birko.Data.Repositories
@@ -19,7 +20,6 @@ namespace Birko.Data.Repositories
         public static TRepository GetRepository<TRepository, TSettings>(TSettings settings)
             where TSettings : Stores.ISettings
             where TRepository : IBaseRepository
-
         {
             if (_repositories == null) {
                 _repositories = new Dictionary<string, IDictionary<Type, object>>();
@@ -39,6 +39,30 @@ namespace Birko.Data.Repositories
 
             }
             return (TRepository)_repositories[id][type];
+        }
+
+        internal static void Destroy<TRepository, TSettings>(TSettings settings)
+            where TSettings : Stores.ISettings
+            where TRepository : IBaseRepository
+        {
+            if (_repositories != null)
+            {
+                var id = settings?.GetId() ?? string.Empty;
+                if (_repositories.ContainsKey(id))
+                {
+                    var type = typeof(TRepository);
+                    if (_repositories[id].ContainsKey(type))
+                    {
+                        var repository = (TRepository)_repositories[id][type];
+                        _repositories[id].Remove(type);
+                        repository.Destroy();
+                        if (!_repositories[id].Any())
+                        {
+                            _repositories.Remove(id);
+                        }
+                    }
+                }
+            }
         }
     }
 }
