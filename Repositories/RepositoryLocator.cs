@@ -16,7 +16,6 @@ namespace Birko.Data.Repositories
             return GetRepository<TRepository, Stores.ISettings>(null);
         }
 
-
         public static TRepository GetRepository<TRepository, TSettings>(TSettings settings)
             where TSettings : Stores.ISettings
             where TRepository : IBaseRepository

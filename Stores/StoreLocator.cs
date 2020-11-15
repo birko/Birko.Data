@@ -8,7 +8,6 @@ namespace Birko.Data.Stores
     {
         private static IDictionary<string, IDictionary<Type, object>> _stores;
 
-
         public static TStore GetStore<TStore>()
             where TStore : IBaseStore
 
