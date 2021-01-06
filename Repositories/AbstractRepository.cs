@@ -71,7 +71,6 @@ namespace Birko.Data.Repositories
 
         public virtual byte[] CalulateHash(TModel data)
         {
-            //return Birko.Data.Helpers.StringHelper.CalculateSHA1Hash(Newtonsoft.Json.JsonConvert.SerializeObject(data));
             return Birko.Data.Helpers.StringHelper.CalculateSHA1Hash(System.Text.Json.JsonSerializer.Serialize(data));
         }
 
@@ -154,11 +153,12 @@ namespace Birko.Data.Repositories
         public virtual TViewModel Delete(Guid Id)
         {
             var _store = Store;
-            if (!ReadMode && _store != null && _store.Count(x => x.Guid == Id) > 0)
+            if (!ReadMode && _store != null)
             {
-                TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
+                TViewModel result = default;
                 _store.List(x => x.Guid == Id, (item) =>
                 {
+                    result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
                     _store.Delete(item);
                     result.LoadFrom(item);
                     RemoveHash(item);
@@ -193,7 +193,7 @@ namespace Birko.Data.Repositories
                 Read(x => x.Guid == Id, (item) =>
                 {
                     result = item;
-                });
+                }, 1, 0);
 
                 return result;
             }
