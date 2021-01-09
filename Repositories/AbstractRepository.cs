@@ -187,7 +187,7 @@ namespace Birko.Data.Repositories
         public virtual TViewModel Read(Guid Id)
         {
             var _store = Store;
-            if (_store != null && _store.Count(x => x.Guid.Value == Id) > 0)
+            if (_store != null && _store.Count(x => x.Guid == Id) > 0)
             {
                 TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
                 Read(x => x.Guid == Id, (item) =>
