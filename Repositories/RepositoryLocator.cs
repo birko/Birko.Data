@@ -7,6 +7,7 @@ namespace Birko.Data.Repositories
 {
     public static class RepositoryLocator
     {
+        private static readonly object _lockObject = new();
         private static IDictionary<string, IDictionary<Type, object>> _repositories;
 
         public static TRepository GetRepository<TRepository>()
@@ -20,22 +21,24 @@ namespace Birko.Data.Repositories
             where TSettings : Stores.ISettings
             where TRepository : IBaseRepository
         {
-            if (_repositories == null) {
-                _repositories = new Dictionary<string, IDictionary<Type, object>>();
-            }
             var id = settings?.GetId() ?? string.Empty;
-            if (!_repositories.ContainsKey(id))
-            {
-                _repositories.Add(id, new Dictionary<Type, object>());
-            }
             var type = typeof(TRepository);
-            if (!_repositories[id].ContainsKey(type)) {
-                _repositories[id].Add(type, (TRepository)Activator.CreateInstance(type, new object[] { }));
-                if (!string.IsNullOrEmpty(id))
+            lock (_lockObject)
+            {
+                _repositories ??= new Dictionary<string, IDictionary<Type, object>>();
+                if (!_repositories.ContainsKey(id))
                 {
-                    ((IStoreRepository<Stores.ISettings>)_repositories[id][type]).SetSettings(settings);
+                    _repositories.Add(id, new Dictionary<Type, object>());
                 }
 
+                if (!_repositories[id].ContainsKey(type))
+                {
+                    _repositories[id].Add(type, (TRepository)Activator.CreateInstance(type, new object[] { }));
+                    if (!string.IsNullOrEmpty(id) && _repositories[id][type] is ISettingsRepository<Stores.ISettings>)
+                    {
+                        ((ISettingsRepository<Stores.ISettings>)_repositories[id][type]).SetSettings(settings);
+                    }
+                }
             }
             return (TRepository)_repositories[id][type];
         }

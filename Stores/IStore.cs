@@ -9,26 +9,62 @@ namespace Birko.Data.Stores
 
     public interface IBaseStore
     {
-        long Count();
         void Init();
-        void StoreChanges();
         void Destroy();
     }
 
-
-    public interface ISettingsStore<TSettings> : IBaseStore
+    public interface ISettingsStore<TSettings>
     {
         void SetSettings(TSettings settings);
     }
 
-    public interface IStore<T, TSettings> : ISettingsStore<TSettings>
+    public interface ICountStore<T>
+         where T : Models.AbstractModel
+    { 
+        long Count(Expression<Func<T, bool>>? filter = null);
+    }
+
+    public interface IReadStore<T>
+         where T : Models.AbstractModel
+    {
+        T? ReadOne(Expression<Func<T, bool>>? filter = null);
+    }
+
+    public interface IDeleteStore<T>
+        where T : Models.AbstractModel
+    {
+        void Delete(T id);
+    }
+
+    public interface ICreateStore<T>
+         where T : Models.AbstractModel
+    {
+        void Create(T data, StoreDataDelegate<T>? storeDelegate = null);
+    }
+
+    public interface IUpdateStore<T>
+         where T : Models.AbstractModel
+    {
+        void Update(T data, StoreDataDelegate<T>? storeDelegate = null);
+    }
+
+    public interface IStore<T>
+        : IBaseStore
+        , ICountStore<T>
+        , IReadStore<T>
+        , ICreateStore<T>
+        , IUpdateStore<T>
+        , IDeleteStore<T>
+        where T : Models.AbstractModel
+    {
+        T CreateInstance();
+    }
+
+    public interface ISettingsStore<T, TSettings>
+        : IStore<T>
+        , ISettingsStore<TSettings>
         where T : Models.AbstractModel
         where TSettings : ISettings
     {
-        void List(Action<T> listAction);
-        void List(Expression<Func<T, bool>> filter, Action<T> listAction, int? limit = null, int? offset = null);
-        long Count(Expression<Func<T, bool>> filter);
-        void Save(T data, StoreDataDelegate<T> storeDelegate = null);
-        void Delete(T data);
     }
 }

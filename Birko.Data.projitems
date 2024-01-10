@@ -10,16 +10,25 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Exceptions\StoreException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Filters\IRepositoryFilter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Filters\ModelsByGuid.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Filters\ModelByGuid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\AbstractLogModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\AbstractModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\ICopyable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\ILoadable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Repositories\AbstractBulkRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Repositories\AbstractBulkSettingsRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Repositories\AbstractSettingsRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Repositories\AbstractRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Repositories\IConfigurator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Repositories\IInitializer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Repositories\IBulkRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Repositories\IRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Repositories\RepositoryLocator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Stores\AbstractBulkStore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Stores\AbstractStore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Stores\IBulkStore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Stores\IStore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Stores\Settings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Stores\StoreLocator.cs" />

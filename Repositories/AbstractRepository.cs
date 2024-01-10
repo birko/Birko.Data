@@ -4,35 +4,25 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Cryptography;
 using System.Text;
+using Birko.Data.Filters;
 using Birko.Data.Models;
 using Birko.Data.Stores;
 
 namespace Birko.Data.Repositories
 {
-    public abstract class AbstractRepository<TViewModel, TModel> : IRepository<TViewModel, TModel, Stores.ISettings>
+    public abstract class AbstractRepository<TViewModel, TModel> 
+        : IRepository<TViewModel, TModel>
         where TModel:Models.AbstractModel, Models.ILoadable<TViewModel>
         where TViewModel:Models.ILoadable<TModel>
     {
         private bool _isReadMode = false;
-        protected string _path = null;
         protected IDictionary<Guid?, byte[]> _modelHash = new Dictionary<Guid?, byte[]>();
-        protected IStore<TModel, Stores.ISettings> Store { get; set; }
+        protected IStore<TModel>? Store { get; set; }
 
         public AbstractRepository()
         {
 
         }
-
-
-        public virtual void SetSettings(Stores.ISettings settings)
-        {
-            if (settings is Settings setts)
-            {
-                _path = setts.Location;
-            }
-        }
-
-
         public bool ReadMode
         {
             get
@@ -49,7 +39,7 @@ namespace Birko.Data.Repositories
             }
         }
 
-        public virtual void StoreHash(TModel data)
+        protected virtual void StoreHash(TModel data)
         {
             if (!ReadMode && data != null && data.Guid != null)
             {
@@ -69,12 +59,12 @@ namespace Birko.Data.Repositories
             }
         }
 
-        public virtual byte[] CalulateHash(TModel data)
+        protected virtual byte[] CalulateHash(TModel data)
         {
             return Birko.Data.Helpers.StringHelper.CalculateSHA1Hash(System.Text.Json.JsonSerializer.Serialize(data));
         }
 
-        public virtual void RemoveHash(TModel data)
+        protected virtual void RemoveHash(TModel data)
         {
             if (!ReadMode && data != null && data.Guid != null && _modelHash != null)
             {
@@ -82,7 +72,7 @@ namespace Birko.Data.Repositories
             }
         }
 
-        public virtual bool CheckHashChange(TModel data, bool update = true)
+        protected virtual bool CheckHashChange(TModel data, bool update = true)
         {
             var result = true;
             if (data != null && data.Guid != null)
@@ -102,134 +92,114 @@ namespace Birko.Data.Repositories
             return result;
         }
 
-
-        public virtual TViewModel Create(TViewModel data, ProcessDataDelegate<TModel> processDelegate = null)
+        public virtual TViewModel CreateInstance()
         {
-            var _store = Store;
-            if (!ReadMode && _store != null && data != null)
+            return (TViewModel)Activator.CreateInstance(typeof(TViewModel), Array.Empty<object>());
+        }
+
+        public virtual TModel CreateModelInstance()
+        {
+            return Store.CreateInstance();
+        }
+
+        public virtual TViewModel LoadInstance(TModel model = null)
+        {
+            if (model != null)
             {
-                TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
-                item.LoadFrom(data);
-                _store.Save(item, (x) => {
-                    x = processDelegate?.Invoke(x) ?? x;
-                    StoreHash(x);
+                return default(TViewModel);
+            }
+            TViewModel result = CreateInstance();
+            result.LoadFrom(model);
+            StoreHash(model);
+            return result;
+        }
+
+        public virtual TModel LoadModelInstance(TViewModel model)
+        {
+            TModel result = CreateModelInstance();
+            result.LoadFrom(model);
+            return result;
+        }
+
+        public virtual TViewModel? ReadOne(IRepositoryFilter<TModel>? filter = null)
+        {
+            if (Store != null)
+            {
+                var model = Store?.ReadOne(filter?.Filter());
+                return LoadInstance(model);
+            }
+            return default;
+        }
+
+        public virtual void Create(TViewModel data, ProcessDataDelegate<TModel>? processDelegate = null)
+        {
+            if (ReadMode)
+            {
+                throw new AccessViolationException("Repository is in Read Mode");
+            }
+            if (Store == null || data == null)
+            {
+                return;
+            }
+
+            TModel item = LoadModelInstance(data);
+            Store.Create(item, (x) =>
+            {
+                x = processDelegate?.Invoke(x) ?? x;
+                StoreHash(x);
+                return x;
+            });
+            data.LoadFrom(item);
+        }
+
+        public virtual void Update(TViewModel data, ProcessDataDelegate<TModel>? processDelegate = null)
+        {
+
+            if (ReadMode)
+            {
+                throw new AccessViolationException("Repository is in Read Mode");
+            }
+            if (Store == null || data == null)
+            {
+                return;
+            }
+
+            TModel item = LoadModelInstance(data);
+            Store.Update(item, (x) =>
+            {
+                x = processDelegate?.Invoke(x) ?? x;
+                if (CheckHashChange(x))
+                {
                     return x;
-                });
-                StoreChanges();
-                data.LoadFrom(item);
-            }
-            else if (ReadMode)
+                }
+                return null;
+            });
+            data.LoadFrom(item);
+        }
+
+        public virtual void Delete(TViewModel model)
+        {
+            if (ReadMode)
             {
                 throw new AccessViolationException("Repository is in Read Mode");
             }
-            return data;
-        }
-
-        public TViewModel Update(Guid Id, TViewModel data, ProcessDataDelegate<TModel> processDelegate = null)
-        {
-            var _store = Store;
-            if (!ReadMode && _store != null)
+            if (Store == null)
             {
-                TModel item = (TModel)Activator.CreateInstance(typeof(TModel), new object[] { });
-                item.LoadFrom(data);
-                _store.Save(item, (x) => {
-                    x = processDelegate?.Invoke(x) ?? x;
-                    if (CheckHashChange(x))
-                    {
-                        return x;
-                    }
-                    return null;
-                });
-                StoreChanges();
-                data.LoadFrom(item);
+                return;
             }
-            else if (ReadMode)
-            {
-                throw new AccessViolationException("Repository is in Read Mode");
-            }
-            return data;
+            var item = (TModel)Activator.CreateInstance(model.GetType(), Array.Empty<object>());
+            item.LoadFrom(model);
+            Store?.Delete(item);
         }
 
-        public virtual TViewModel Delete(Guid Id)
+        public virtual long Count(IRepositoryFilter<TModel>? filter = null)
         {
-            var _store = Store;
-            if (!ReadMode && _store != null)
-            {
-                TViewModel result = default;
-                _store.List(x => x.Guid == Id, (item) =>
-                {
-                    result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
-                    _store.Delete(item);
-                    result.LoadFrom(item);
-                    RemoveHash(item);
-                });
-                StoreChanges();
-                return result;
-            }
-            else if (ReadMode)
-            {
-                throw new AccessViolationException("Repository is in Read Mode");
-            }
-            return default;
-        }
-
-        public virtual long Count()
-        {
-            return Count(null);
-        }
-
-        public virtual long Count(Expression<Func<TModel, bool>> filter)
-        {
-            var _store = Store;
-            return (_store != null) ? _store.Count(filter) : 0;
-        }
-
-        public virtual TViewModel Read(Guid Id)
-        {
-            var _store = Store;
-            if (_store != null && _store.Count(x => x.Guid == Id) > 0)
-            {
-                TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
-                Read(x => x.Guid == Id, (item) =>
-                {
-                    result = item;
-                }, 1, 0);
-
-                return result;
-            }
-            return default;
-        }
-
-        public virtual void Read(Action<TViewModel> readAction, int? limit = null, int? offset = null)
-        {
-            Read(null, readAction, limit, offset);
-        }
-
-        public virtual void Read(Expression<Func<TModel, bool>> expr, Action<TViewModel> readAction, int? limit = null, int? offset = null)
-        {
-            var _store =  Store;
-            if (_store != null && _store.Count(expr) > 0 && readAction != null)
-            {
-                _store.List(expr, (item) =>
-                {
-                    TViewModel result = (TViewModel)Activator.CreateInstance(typeof(TViewModel), new object[] { });
-                    result.LoadFrom(item);
-                    StoreHash(item);
-                    readAction?.Invoke(result);
-                }, limit, offset);
-            }
-        }
-
-        public void StoreChanges()
-        {
-            var _store = Store;
-            _store?.StoreChanges();
+            return Store?.Count(filter?.Filter()) ?? 0;
         }
 
         public virtual void Destroy()
         {
-            var _store = Store;
-            _store?.Destroy();
+            Store?.Destroy();
         }
     }
 }

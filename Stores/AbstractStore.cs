@@ -6,25 +6,36 @@ using Birko.Data.Models;
 
 namespace Birko.Data.Stores
 {
-    public abstract class AbstractStore<T> : IStore<T, ISettings>
+    public abstract class AbstractStore<T> : IStore<T>
          where T : Models.AbstractModel
     {
-        public abstract long Count(Expression<Func<T, bool>> filter);
+        public abstract long Count(Expression<Func<T, bool>>? filter = null);
         public abstract void Delete(T data);
         public abstract void Destroy();
         public abstract void Init();
-        public abstract void List(Expression<Func<T, bool>> filter, Action<T> listAction, int? limit = null, int? offset = null);
-        public abstract void Save(T data, StoreDataDelegate<T> storeDelegate = null);
-        public abstract void SetSettings(ISettings settings);
-        public abstract void StoreChanges();
-        public virtual long Count()
+        public abstract T? ReadOne(Expression<Func<T, bool>>? filter = null);
+        public abstract void Create(T data, StoreDataDelegate<T>? storeDelegate = null);
+        public abstract void Update(T data, StoreDataDelegate<T>? storeDelegate = null);
+
+        public virtual void Save(T data, StoreDataDelegate<T> storeDelegate = null)
         {
-            return Count(null);
+            if (data == null)
+            {
+                return;
+            }
+            if (data.Guid == null || data.Guid == Guid.Empty)
+            {
+                Create(data, storeDelegate);
+            }
+            else
+            {
+                Update(data, storeDelegate);
+            }
         }
 
-        public virtual void List(Action<T> action)
+        public T CreateInstance()
         {
-            List(null, action);
+            return (T)Activator.CreateInstance(typeof(T), new object[] { });
         }
     }
 }

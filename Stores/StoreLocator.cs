@@ -6,6 +6,7 @@ namespace Birko.Data.Stores
 {
     public static class StoreLocator
     {
+        private static readonly object _lockObject = new();
         private static IDictionary<string, IDictionary<Type, object>> _stores;
 
         public static TStore GetStore<TStore>()
@@ -20,22 +21,23 @@ namespace Birko.Data.Stores
             where TStore: IBaseStore
 
         {
-            if (_stores == null)
-            {
-                _stores = new Dictionary<string, IDictionary<Type, object>>();
-            }
             var id = settings?.GetId() ?? string.Empty;
-            if (!_stores.ContainsKey(id))
-            {
-                _stores.Add(id, new Dictionary<Type, object>());
-            }
             var type = typeof(TStore);
-            if (!_stores[id].ContainsKey(type))
+            lock (_lockObject)
             {
-                _stores[id].Add(type, (TStore)Activator.CreateInstance(type, new object[] { }));
-                if (!string.IsNullOrEmpty(id))
+                _stores ??= new Dictionary<string, IDictionary<Type, object>>();
+                if (!_stores.ContainsKey(id))
                 {
-                    ((ISettingsStore<ISettings>)_stores[id][type]).SetSettings(settings);
+                    _stores.Add(id, new Dictionary<Type, object>());
+                }
+
+                if (!_stores[id].ContainsKey(type))
+                {
+                    _stores[id].Add(type, (TStore)Activator.CreateInstance(type, new object[] { }));
+                    if (!string.IsNullOrEmpty(id) && _stores[id][type] is ISettingsStore<TSettings>)
+                    {
+                        ((ISettingsStore<TSettings>)_stores[id][type]).SetSettings(settings);
+                    }
                 }
             }
             return (TStore)_stores[id][type];
